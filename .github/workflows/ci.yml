@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - name: Install JavaScript test dependencies
+        run: npm ci
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Prepare bundled universal Python runtime
@@ -29,9 +31,11 @@ jobs:
         run: swift test --scratch-path "$RUNNER_TEMP/ShelfSwiftTests"
       - name: Validate scripts and dashboard JavaScript
         run: |
-          python3 -m py_compile Sources/ShelfCore/Tools/*.py
+          python3 -m py_compile Sources/ReadCore/Tools/*.py
           python3 -m unittest discover -s Tests/Python -v
           node --check Resources/Dashboard/app.js
+          node --check Resources/Dashboard/articles.js
+          node --check Resources/Dashboard/article-extraction.js
           node --test Tests/JavaScript/*.test.cjs
           python3 -m py_compile Scripts/setup-apple-signing.py
           swift Scripts/export-developer-id.swift
@@ -49,23 +53,23 @@ jobs:
           bash Scripts/download-sparkle.sh "$RUNNER_TEMP/Sparkle"
           umask 077
           openssl rand -base64 32 > "$RUNNER_TEMP/sparkle-test.key"
-          swift Scripts/configure-updater.swift Config/Shelf-Info.plist < "$RUNNER_TEMP/sparkle-test.key" > "$RUNNER_TEMP/sparkle-test.pub"
+          swift Scripts/configure-updater.swift Config/Read-Info.plist < "$RUNNER_TEMP/sparkle-test.key" > "$RUNNER_TEMP/sparkle-test.pub"
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml --project .
       - name: Build macOS app
-        run: xcodebuild -project Shelf.xcodeproj -scheme Shelf -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "$RUNNER_TEMP/ShelfCI" CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project Read.xcodeproj -scheme Read -configuration Release -destination 'generic/platform=macOS' -derivedDataPath "$RUNNER_TEMP/ShelfCI" CODE_SIGNING_ALLOWED=NO build
       - name: Verify signed update archive and feed
         run: |
-          APP="$RUNNER_TEMP/ShelfCI/Build/Products/Release/Shelf.app"
+          APP="$RUNNER_TEMP/ShelfCI/Build/Products/Release/read.app"
           codesign --force --deep --sign - "$APP"
           codesign --verify --deep --strict "$APP"
           mkdir -p "$RUNNER_TEMP/update-test"
-          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/update-test/Shelf.zip"
-          "$RUNNER_TEMP/Sparkle/bin/sign_update" -p --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/update-test/Shelf.zip" > "$RUNNER_TEMP/test-signature"
-          "$RUNNER_TEMP/Sparkle/bin/sign_update" --verify --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/update-test/Shelf.zip" "$(cat "$RUNNER_TEMP/test-signature")"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/update-test/read.zip"
+          "$RUNNER_TEMP/Sparkle/bin/sign_update" -p --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/update-test/read.zip" > "$RUNNER_TEMP/test-signature"
+          "$RUNNER_TEMP/Sparkle/bin/sign_update" --verify --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/update-test/read.zip" "$(cat "$RUNNER_TEMP/test-signature")"
           "$RUNNER_TEMP/Sparkle/bin/generate_appcast" --ed-key-file "$RUNNER_TEMP/sparkle-test.key" --download-url-prefix https://example.invalid/updates/ "$RUNNER_TEMP/update-test"
           "$RUNNER_TEMP/Sparkle/bin/sign_update" --verify --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/update-test/appcast.xml"
-          cp "$RUNNER_TEMP/update-test/Shelf.zip" "$RUNNER_TEMP/tampered.zip"
+          cp "$RUNNER_TEMP/update-test/read.zip" "$RUNNER_TEMP/tampered.zip"
           printf 'tampered' >> "$RUNNER_TEMP/tampered.zip"
           if "$RUNNER_TEMP/Sparkle/bin/sign_update" --verify --ed-key-file "$RUNNER_TEMP/sparkle-test.key" "$RUNNER_TEMP/tampered.zip" "$(cat "$RUNNER_TEMP/test-signature")"; then
             echo 'Tampered archive was incorrectly accepted' >&2
@@ -73,7 +77,7 @@ jobs:
           fi
       - name: Smoke-test updater-enabled app startup
         run: |
-          APP="$RUNNER_TEMP/ShelfCI/Build/Products/Release/Shelf.app"
+          APP="$RUNNER_TEMP/ShelfCI/Build/Products/Release/read.app"
           mkdir -p "$RUNNER_TEMP/shelf-smoke/library" "$RUNNER_TEMP/shelf-smoke/state" "$RUNNER_TEMP/shelf-smoke/logs"
           touch "$RUNNER_TEMP/shelf-smoke/library/metadata.db"
           python3 - <<'PYSMOKE'
@@ -82,7 +86,8 @@ jobs:
           config={'setupCompleted':True,'connectionsConfigured':True,'paths':{k:str(root/v) for k,v in {'booksRoot':'.','library':'library','state':'state','logs':'logs','scripts':'scripts','import':'inbox'}.items()},'tools':{'docker':'/usr/bin/false','adb':'/usr/bin/false','brew':'/usr/bin/false'}}
           (root/'config.json').write_text(json.dumps(config))
           PYSMOKE
-          SHELF_CONFIG="$RUNNER_TEMP/shelf-smoke/config.json" "$APP/Contents/MacOS/Shelf" -SUEnableAutomaticChecks NO > "$RUNNER_TEMP/shelf-startup.log" 2>&1 &
+          APP_EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
+          SHELF_CONFIG="$RUNNER_TEMP/shelf-smoke/config.json" "$APP/Contents/MacOS/$APP_EXECUTABLE" -SUEnableAutomaticChecks NO > "$RUNNER_TEMP/shelf-startup.log" 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for _ in {1..30}; do
@@ -96,7 +101,7 @@ jobs:
         if: always()
         with:
           name: generated-xcode-project
-          path: Shelf.xcodeproj/project.pbxproj
+          path: Read.xcodeproj/project.pbxproj
       - name: Build and verify isolated development app
         env:
           SHELF_DEVELOPMENT_BUILD: '1'
@@ -106,10 +111,10 @@ jobs:
           bash Scripts/build-and-install.sh
           python3 - <<'PYDEV'
           import os,pathlib,plistlib
-          app=pathlib.Path('/tmp')/('ShelfBuild-'+str(os.getuid())+'-Dev')/'DerivedData/Build/Products/Release/Shelf.app'
+          app=pathlib.Path('/tmp')/('ShelfBuild-'+str(os.getuid())+'-Dev')/'DerivedData/Build/Products/Release/read.app'
           with (app/'Contents/Info.plist').open('rb') as f: info=plistlib.load(f)
           assert info['CFBundleIdentifier']=='app.shelf.dashboard.dev'
-          assert info['CFBundleDisplayName']=='Shelf Dev'
+          assert info['CFBundleDisplayName']=='read. Dev'
           assert 'SUPublicEDKey' not in info
           assert info['SUEnableAutomaticChecks'] is False
           assert info['SUAutomaticallyUpdate'] is False
@@ -120,5 +125,5 @@ jobs:
           export SHELF_APPLICATIONS_DIR="$RUNNER_TEMP/dev-applications"
           bash Scripts/build-and-install.sh
           bash Scripts/build-and-install.sh
-          codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/Shelf Dev.app"
-          codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/Shelf Dev.previous.app"
+          codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/read Dev.app"
+          codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/read Dev.previous.app"

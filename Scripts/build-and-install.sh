@@ -5,9 +5,9 @@ PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_DIR="$HOME/Library/Application Support/Shelf"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 BUILD_ROOT="/tmp/ShelfBuild-$UID"
-APP_NAME="Shelf"
+APP_NAME="read"
 if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
-  APP_NAME="Shelf Dev"
+  APP_NAME="read Dev"
   BUILD_ROOT="$BUILD_ROOT-Dev"
 fi
 DERIVED_DATA="$BUILD_ROOT/DerivedData"
@@ -83,7 +83,7 @@ with open(path, "w", encoding="utf-8") as output:
 os.chmod(path, 0o600)
 PY
 
-PROJECT_FILE="$PROJECT_ROOT/Shelf.xcodeproj/project.pbxproj"
+PROJECT_FILE="$PROJECT_ROOT/Read.xcodeproj/project.pbxproj"
 "$PROJECT_ROOT/Scripts/download-python-runtime.sh"
 if [[ ! -f "$PROJECT_FILE" || ( "$PROJECT_ROOT/project.yml" -nt "$PROJECT_FILE" && "${SHELF_DEVELOPMENT_BUILD:-0}" != 1 ) ]]; then
   if ! command -v xcodegen >/dev/null 2>&1; then
@@ -94,20 +94,20 @@ if [[ ! -f "$PROJECT_FILE" || ( "$PROJECT_ROOT/project.yml" -nt "$PROJECT_FILE" 
 fi
 
 if xcodebuild -version >/dev/null 2>&1; then
-  xcodebuild -project "$PROJECT_ROOT/Shelf.xcodeproj" -scheme Shelf -configuration Release \
+  xcodebuild -project "$PROJECT_ROOT/Read.xcodeproj" -scheme Read -configuration Release \
     -derivedDataPath "$DERIVED_DATA" CODE_SIGNING_ALLOWED=NO build
-  BUILT_APP="$DERIVED_DATA/Build/Products/Release/Shelf.app"
+  BUILT_APP="$DERIVED_DATA/Build/Products/Release/read.app"
 else
-  BUILT_APP="$BUILD_ROOT/Manual/Shelf.app"
+  BUILT_APP="$BUILD_ROOT/Manual/read.app"
   CONTENTS="$BUILT_APP/Contents"
   RESOURCES="$CONTENTS/Resources"
   mkdir -p "$CONTENTS/MacOS" "$RESOURCES"
   swift "$PROJECT_ROOT/Scripts/generate_icon.swift" "$PROJECT_ROOT/Resources/Icons/AppIcon.iconset"
   iconutil --convert icns "$PROJECT_ROOT/Resources/Icons/AppIcon.iconset" --output "$PROJECT_ROOT/Resources/Icons/AppIcon.icns"
   swiftc -parse-as-library -swift-version 5 -target "$(uname -m)-apple-macosx14.0" \
-    -emit-module -emit-library -module-name ShelfCore \
-    -emit-module-path "$RESOURCES/ShelfCore.swiftmodule" \
-    -o "$RESOURCES/libShelfCore.dylib" "$PROJECT_ROOT"/Sources/ShelfCore/ShelfCore/*.swift
+    -emit-module -emit-library -module-name ReadCore \
+    -emit-module-path "$RESOURCES/ReadCore.swiftmodule" \
+    -o "$RESOURCES/libReadCore.dylib" "$PROJECT_ROOT"/Sources/ReadCore/ReadCore/*.swift
   SPARKLE_DIR="$BUILD_ROOT/Sparkle"
   bash "$PROJECT_ROOT/Scripts/download-sparkle.sh" "$SPARKLE_DIR"
   SPARKLE_FRAMEWORKS="$SPARKLE_DIR/Sparkle.xcframework/macos-arm64_x86_64"
@@ -116,22 +116,23 @@ else
   swiftc -parse-as-library -swift-version 5 -target "$(uname -m)-apple-macosx14.0" \
     -F "$SPARKLE_FRAMEWORKS" -framework Sparkle \
     -Xlinker -rpath -Xlinker '@executable_path/../Frameworks' \
-    -framework AppKit -framework WebKit -framework Vision -framework PDFKit -I "$RESOURCES" -L "$RESOURCES" -lShelfCore \
+    -framework AppKit -framework WebKit -framework Vision -framework PDFKit -I "$RESOURCES" -L "$RESOURCES" -lReadCore \
     -Xlinker -rpath -Xlinker '@executable_path/../Resources' \
-    -o "$CONTENTS/MacOS/Shelf" "$PROJECT_ROOT"/Sources/ShelfMacApp/*.swift
+    -o "$CONTENTS/MacOS/read" "$PROJECT_ROOT"/Sources/ReadMacApp/*.swift
   cp "$PROJECT_ROOT/Resources/Dashboard/index.html" "$PROJECT_ROOT/Resources/Dashboard/style.css" \
-    "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
-    "$PROJECT_ROOT/Sources/ShelfCore/Tools/"*.py "$PROJECT_ROOT/Config/config.example.json" "$RESOURCES/"
+    "$PROJECT_ROOT/Resources/Dashboard/article-extraction.js" "$PROJECT_ROOT/Resources/Dashboard/articles.js" "$PROJECT_ROOT/Resources/Dashboard/articles.css" "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
+    "$PROJECT_ROOT/Sources/ReadCore/Tools/"*.py "$PROJECT_ROOT/Config/config.example.json" "$RESOURCES/"
+  ditto "$PROJECT_ROOT/Resources/Dashboard/Vendor" "$RESOURCES/Vendor"
   ditto "$PROJECT_ROOT/Resources/PythonRuntime" "$RESOURCES/PythonRuntime"
   cat > "$CONTENTS/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleExecutable</key><string>Shelf</string>
+<key>CFBundleExecutable</key><string>read</string>
 <key>CFBundleURLTypes</key><array><dict><key>CFBundleURLName</key><string>app.shelf.highlights</string><key>CFBundleURLSchemes</key><array><string>shelf</string></array></dict></array>
 <key>CFBundleIdentifier</key><string>app.shelf.dashboard</string>
-<key>CFBundleName</key><string>Shelf</string>
-<key>CFBundleDisplayName</key><string>Shelf</string>
+<key>CFBundleName</key><string>read</string>
+<key>CFBundleDisplayName</key><string>read.</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleIconFile</key><string>AppIcon.icns</string>
 <key>CFBundleShortVersionString</key><string>0.2.1</string>
@@ -140,16 +141,19 @@ else
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>
 PLIST
-  /usr/bin/python3 - "$PROJECT_ROOT/Config/Shelf-Info.plist" "$CONTENTS/Info.plist" <<'PYINFO'
-import plistlib,sys
+  /usr/bin/python3 - "$PROJECT_ROOT/Config/Read-Info.plist" "$CONTENTS/Info.plist" "$PROJECT_ROOT/project.yml" <<'PYINFO'
+import plistlib,sys,re
 with open(sys.argv[1], 'rb') as f: custom=plistlib.load(f)
 with open(sys.argv[2], 'rb') as f: info=plistlib.load(f)
 info.update(custom)
+spec=open(sys.argv[3]).read()
+info["CFBundleShortVersionString"]=re.search(r"MARKETING_VERSION: ([0-9.]+)",spec).group(1)
+info["CFBundleVersion"]=re.search(r"CURRENT_PROJECT_VERSION: ([0-9]+)",spec).group(1)
 with open(sys.argv[2], 'wb') as f: plistlib.dump(info,f)
 PYINFO
 fi
 if [[ ! -d "$BUILT_APP" ]]; then
-  echo "Xcode completed without creating Shelf.app." >&2
+  echo "Xcode completed without creating read.app." >&2
   exit 1
 fi
 if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
@@ -157,8 +161,8 @@ if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
 import plistlib,sys
 path=sys.argv[1]
 with open(path,'rb') as f: info=plistlib.load(f)
-info.update(CFBundleIdentifier='app.shelf.dashboard.dev',CFBundleName='Shelf Dev',
-            CFBundleDisplayName='Shelf Dev',SUEnableAutomaticChecks=False,SUAutomaticallyUpdate=False)
+info.update(CFBundleIdentifier='app.shelf.dashboard.dev',CFBundleName='read Dev',
+            CFBundleDisplayName='read. Dev',SUEnableAutomaticChecks=False,SUAutomaticallyUpdate=False)
 info.pop('SUPublicEDKey',None)
 info['CFBundleURLTypes']=[{'CFBundleURLName':'app.shelf.highlights.dev','CFBundleURLSchemes':['shelf-dev']}]
 with open(path,'wb') as f: plistlib.dump(info,f)
@@ -175,15 +179,15 @@ if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
   # Stage and verify before stopping the running development app. Never quit Shelf.
   STAGED_APP="$(mktemp -d "$APPLICATIONS_DIR/.Shelf-Dev.XXXXXX")"
   trap 'rm -rf "$STAGED_APP"' EXIT
-  ditto "$BUILT_APP" "$STAGED_APP/Shelf Dev.app"
-  codesign --verify --deep --strict "$STAGED_APP/Shelf Dev.app"
+  ditto "$BUILT_APP" "$STAGED_APP/read Dev.app"
+  codesign --verify --deep --strict "$STAGED_APP/read Dev.app"
   osascript -e 'tell application id "app.shelf.dashboard.dev" to quit' >/dev/null 2>&1 || true
   if [[ -e "$APP" ]]; then
-    BACKUP_APP="$APPLICATIONS_DIR/Shelf Dev.previous.app"
+    BACKUP_APP="$APPLICATIONS_DIR/read Dev.previous.app"
     rm -rf "$BACKUP_APP"
     mv "$APP" "$BACKUP_APP"
   fi
-  if ! mv "$STAGED_APP/Shelf Dev.app" "$APP"; then
+  if ! mv "$STAGED_APP/read Dev.app" "$APP"; then
     if [[ -n "${BACKUP_APP:-}" ]]; then mv "$BACKUP_APP" "$APP"; fi
     exit 1
   fi
@@ -193,11 +197,14 @@ if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
   echo "Installed $APP (release updates disabled; source sync manages this app)"
   exit 0
 fi
-osascript -e 'tell application "Shelf" to quit' >/dev/null 2>&1 || true
+osascript -e 'tell application id "app.shelf.dashboard" to quit' >/dev/null 2>&1 || true
 if [[ -e "$APP" ]]; then
   osascript -e "tell application \"Finder\" to delete POSIX file \"$APP\""
 fi
 ditto "$BUILT_APP" "$APP"
+if [[ -d "$APPLICATIONS_DIR/Shelf.app" && "$APP" != "$APPLICATIONS_DIR/Shelf.app" ]]; then
+  osascript -e "tell application \"Finder\" to delete POSIX file \"$APPLICATIONS_DIR/Shelf.app\""
+fi
 codesign --verify --deep --strict "$APP"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP" >/dev/null 2>&1 || true
 touch "$APP"

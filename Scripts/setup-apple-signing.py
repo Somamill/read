@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
-REPOSITORY = 'Somamill/Shelf'
+REPOSITORY = 'Somamill/read'
 NAMES = ('APPLE_ID', 'APPLE_TEAM_ID', 'APPLE_APP_SPECIFIC_PASSWORD',
          'APPLE_CERTIFICATE_PASSWORD', 'APPLE_CERTIFICATE_BASE64')
 

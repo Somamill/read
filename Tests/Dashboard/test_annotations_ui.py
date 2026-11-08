@@ -3,7 +3,7 @@ import json,sys,tempfile,http.server,threading,functools,io
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[2]
-sys.path.insert(0,str(root/'Sources/ShelfCore/Tools'))
+sys.path.insert(0,str(root/'Sources/ReadCore/Tools'))
 from shelf_annotations import Library,dispatch
 import shelf_studio
 from unittest.mock import patch
@@ -124,7 +124,7 @@ with tempfile.TemporaryDirectory() as tmp:
   assert '1 Readwise highlights saved' in page.locator('#readwiseImportStatus').text_content()
   assert page.get_by_role('button',name='Open in Readwise',exact=True).count()==1
   # Exercise the exact reader anchor code embedded in the native app.
-  swift=(root/'Sources/ShelfMacApp/AppMain.swift').read_text()
+  swift=(root/'Sources/ReadMacApp/AppMain.swift').read_text()
   anchor=swift[swift.index('              function rangeAt('):]
   anchor=anchor[:anchor.index('\n',anchor.index('window.captureReaderHighlight=function'))]
   anchor_page=browser.new_page()

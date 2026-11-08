@@ -1,5 +1,5 @@
 import XCTest
-@testable import ShelfCore
+@testable import ReadCore
 
 final class ReaderProgressStoreTests: XCTestCase {
     func testOfflinePositionSurvivesRestartAndOlderAcknowledgement() throws {

@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-TOOL = Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools/boox_settings.py'
+TOOL = Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools/boox_settings.py'
 spec = importlib.util.spec_from_file_location('boox_catalog_settings', TOOL)
 settings = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(settings)

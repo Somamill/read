@@ -20,7 +20,7 @@ class BridgeFailureTests(unittest.TestCase):
             "booksRoot": str(root), "state": str(root / "state"),
             "logs": str(root / "logs"),
         }}))
-        tools = Path(__file__).resolve().parents[2] / "Sources/ShelfCore/Tools"
+        tools = Path(__file__).resolve().parents[2] / "Sources/ReadCore/Tools"
         with patch.dict(os.environ, SHELF_CONFIG=str(config)), patch.object(sys, "path", [str(tools)] + sys.path):
             # Configuration is read on import; avoid reusing another test's paths.
             with patch.dict(sys.modules):

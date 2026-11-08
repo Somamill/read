@@ -1,11 +1,11 @@
-cask "shelf" do
+cask "read" do
   version :latest
   sha256 :no_check
 
-  url "https://github.com/Somamill/Shelf/releases/latest/download/Shelf.dmg"
-  name "Shelf"
-  desc "Unified Calibre and reading progress dashboard"
-  homepage "https://github.com/Somamill/Shelf"
+  url "https://github.com/Somamill/read/releases/latest/download/read.dmg"
+  name "read."
+  desc "Local-first books, articles, highlights and reading sync"
+  homepage "https://github.com/Somamill/read"
 
   livecheck do
     url :url
@@ -15,7 +15,7 @@ cask "shelf" do
   auto_updates true
   depends_on macos: :sonoma
 
-  app "Shelf.app"
+  app "read.app"
 
   zap trash: [
     "~/Library/Application Support/Shelf",

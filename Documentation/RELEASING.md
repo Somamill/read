@@ -1,6 +1,6 @@
-# Releasing Shelf for macOS
+# Releasing read. for macOS
 
-The release workflow builds a self-contained DMG for every version tag. It uses Developer ID signing and Apple notarization when the repository secrets are configured. If those credentials are unavailable, it publishes an ad-hoc signed, unsigned-for-distribution community build instead. Ad-hoc signing preserves bundle integrity but does not identify Shelf as an Apple-verified developer; macOS Gatekeeper remains enabled and users may need to approve the first launch manually using [Apple's documented steps](https://support.apple.com/en-nz/102445).
+The release workflow builds a self-contained DMG for every version tag. It uses Developer ID signing and Apple notarization when the repository secrets are configured. If those credentials are unavailable, it publishes an ad-hoc signed, unsigned-for-distribution community build instead. Ad-hoc signing preserves bundle integrity but does not identify read. as an Apple-verified developer; macOS Gatekeeper remains enabled and users may need to approve the first launch manually using [Apple's documented steps](https://support.apple.com/en-nz/102445).
 
 ## One-time GitHub setup
 
@@ -20,7 +20,7 @@ Configure the persistent `SPARKLE_PRIVATE_KEY` secret once using `Scripts/setup-
 
 ## Create a release
 
-Push a version tag such as `v0.1.38`. The `macOS release` workflow builds Shelf with its universal Python runtimes, then either notarizes it or creates the unsigned community build. It publishes `Shelf.dmg`, a versioned app ZIP, and a SHA-256 checksum to the matching GitHub release. The Homebrew cask downloads the stable `Shelf.dmg` asset and discloses that macOS may require a one-time approval. Do not remove quarantine attributes or disable Gatekeeper to make installation appear seamless.
+Push a version tag such as `v0.1.38`. The `macOS release` workflow builds read. with its universal Python runtimes, then either notarizes it or creates the unsigned community build. It publishes `read.dmg`, a versioned app ZIP, and a SHA-256 checksum to the matching GitHub release. The Homebrew cask downloads the stable `read.dmg` asset and discloses that macOS may require a one-time approval. Do not remove quarantine attributes or disable Gatekeeper to make installation appear seamless.
 
 For the certificate and notarization requirements, see Apple's [Developer ID certificate guide](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/) and [notarization guide](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
 

@@ -1,6 +1,6 @@
 # Repairing local automation failures
 
-Shelf's log copy includes historical output. A file updated today can contain
+read.'s log copy includes historical output. A file updated today can contain
 errors from months ago. Keep the logs as evidence and check for a later successful
 run of the same job before changing the system. Diagnostic exports include up to
 50 distinct recent issues, with repeated messages grouped.
@@ -8,9 +8,9 @@ run of the same job before changing the system. Diagnostic exports include up to
 ## iCloud access and interrupted file operations
 
 `Operation not permitted` is a macOS privacy/access failure. Reselect the import
-folder in Shelf Setup, confirm the folder is downloaded locally in Finder, and
-check System Settings → Privacy & Security for access denied to Shelf or the
-specific app running the automation. A folder grant to Shelf does not grant
+folder in read. Setup, confirm the folder is downloaded locally in Finder, and
+check System Settings → Privacy & Security for access denied to read. or the
+specific app running the automation. A folder grant to read. does not grant
 access to a separate launch agent or legacy importer app. Use a local inbox when
 background iCloud access remains unavailable. Keep the active Calibre library
 local. Do not change file permissions recursively or disable macOS protections.
@@ -23,7 +23,7 @@ scripts and their launch-agent configuration on that Mac.
 
 ## Calibre authentication, contention, and timeouts
 
-Shelf's health probe negotiates the server's authentication scheme, including
+read.'s health probe negotiates the server's authentication scheme, including
 Digest. A 401 challenge followed by 200 is normal Digest negotiation; repeated
 final 401 responses require checking the configured username and saved password.
 Do not turn off server authentication. Broken pipes can follow a client timeout;
@@ -43,7 +43,7 @@ unmatched device records still need review and must not be force-matched.
 
 An Xcode-license error from an old agent using Apple's developer Python requires
 the Mac owner to review and accept the license, or configure that agent to use an
-installed supported Python. Shelf releases include their own Python runtime.
+installed supported Python. read. releases include their own Python runtime.
 
 ## Antivirus and book validation
 

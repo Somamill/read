@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 import urllib.error
 
-TOOLS=Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'
+TOOLS=Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'
 sys.path.insert(0,str(TOOLS))
 from shelf_annotations import Library, dispatch as annotation_dispatch
 import shelf_studio as studio

@@ -12,11 +12,11 @@ fi
 REPO="${1:-$HOME/Developer/Shelf}"
 if [[ ! -e "$REPO" ]]; then
   mkdir -p "$(dirname "$REPO")"
-  git clone --branch main https://github.com/Somamill/Shelf.git "$REPO"
+  git clone --branch main https://github.com/Somamill/read.git "$REPO"
 fi
 BOOTSTRAP="$(mktemp -d "${TMPDIR:-/tmp}/shelf-development.XXXXXX")"
 trap 'rm -rf "$BOOTSTRAP"' EXIT
 curl --fail --location --silent --show-error \
-  https://raw.githubusercontent.com/Somamill/Shelf/main/Scripts/development-sync.py \
+  https://raw.githubusercontent.com/Somamill/read/main/Scripts/development-sync.py \
   --output "$BOOTSTRAP/development-sync.py"
 /usr/bin/python3 "$BOOTSTRAP/development-sync.py" setup --repo "$REPO"

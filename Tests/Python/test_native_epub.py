@@ -6,7 +6,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 import json
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'))
 from epub_native import prepare_epub,resolve,parse_xml
 
 class NativeEpubTests(unittest.TestCase):

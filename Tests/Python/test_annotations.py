@@ -10,7 +10,7 @@ from datetime import datetime
 from unittest.mock import patch
 import urllib.error
 
-TOOLS=Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'
+TOOLS=Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'
 sys.path.insert(0,str(TOOLS))
 import shelf_annotations as annotations
 

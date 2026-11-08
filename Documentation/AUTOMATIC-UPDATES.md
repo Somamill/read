@@ -1,14 +1,14 @@
 # Automatic app updates
 
-Shelf uses Sparkle 2.10.1 for signed in-app updates. SSH and a local source checkout
+read. uses Sparkle 2.10.1 for signed in-app updates. SSH and a local source checkout
 are not needed for installed users. Install the first updater-enabled release
 manually once: older releases such as 0.2.0 do not contain Sparkle and cannot
 bootstrap themselves into this update flow.
 
 Automatic checks and background installation are enabled by default. Saved user
-preferences take precedence; change them in **Updates → Shelf app updates**. It checks approximately every four hours while Shelf runs,
+preferences take precedence; change them in **Updates → read. app updates**. It checks approximately every four hours while read. runs,
 can download/install in the background, and may defer installation until quit or
-ask for macOS authorization. **Shelf → Check for Shelf Updates…** checks manually.
+ask for macOS authorization. **read. → Check for read. Updates…** checks manually.
 The separate Calibre/CrossPoint update controls continue to manage those products.
 
 ## One-time developer setup
@@ -17,7 +17,7 @@ Updates require a persistent Ed25519 signing seed stored as the GitHub Actions
 repository secret `SPARKLE_PRIVATE_KEY`. Do not paste it into chat, commit it, or
 print it in CI logs. Use an authenticated GitHub CLI session with repository-secret access for setup.
 
-On the developer Mac, from a current Shelf source checkout, run:
+On the developer Mac, from a current read. source checkout, run:
 
 ```sh
 Scripts/setup-updater-signing.sh
@@ -38,7 +38,7 @@ carefully planned key-rotation release.
 
 The public key is derived from the private seed and embedded in the app during a
 release build. It is safe to publish and is attached to each release as
-`sparkle-public-key.txt`. The production public key is also tracked in `Config/Shelf-Info.plist`, so normal
+`sparkle-public-key.txt`. The production public key is also tracked in `Config/Read-Info.plist`, so normal
 local builds retain update support. Isolated development builds remove that key
 and disable automatic updates to avoid replacing the development app.
 
@@ -49,7 +49,7 @@ and copy it directly to your clipboard without displaying it:
 
 ```sh
 umask 077
-key_dir="$HOME/Library/Application Support/Shelf/UpdaterSigning"
+key_dir="$HOME/Library/Application Support/read./UpdaterSigning"
 mkdir -p "$key_dir"
 chmod 700 "$key_dir"
 if [ ! -e "$key_dir/ed25519.seed" ]; then
@@ -59,7 +59,7 @@ chmod 600 "$key_dir/ed25519.seed"
 pbcopy < "$key_dir/ed25519.seed"
 ```
 
-Open [the repository's new Actions secret page](https://github.com/Somamill/Shelf/settings/secrets/actions/new),
+Open [the repository's new Actions secret page](https://github.com/Somamill/read/settings/secrets/actions/new),
 name the secret `SPARKLE_PRIVATE_KEY`, and paste the clipboard into the value field.
 Do this only for the initial setup, not to replace an existing release key.
 Keep a secure backup of `ed25519.seed`. This alternative stores the original seed
@@ -87,7 +87,7 @@ Sparkle checks the archive signature before extraction and requires signed feeds
 and release notes. Invalid feed signatures do not expire into an unsigned fallback.
 The appcast is hosted at:
 
-`https://github.com/Somamill/Shelf/releases/latest/download/appcast.xml`
+`https://github.com/Somamill/read/releases/latest/download/appcast.xml`
 
 Ed25519 update signing is separate from Apple Developer ID signing/notarization.
 The former authenticates updates; the latter gives the smoothest Gatekeeper

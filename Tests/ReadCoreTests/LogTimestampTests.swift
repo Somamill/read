@@ -1,5 +1,5 @@
 import XCTest
-@testable import ShelfCore
+@testable import ReadCore
 final class LogTimestampTests:XCTestCase {
     func testRecoveryIsNewerThanFailureInTheLocalTimezone() throws {
         let zone=try XCTUnwrap(TimeZone(identifier:"Asia/Tokyo"))

@@ -1,0 +1,24 @@
+{
+  "name": "read-desktop",
+  "version": "0.3.0",
+  "description": "Development tests for read., the local-first reading app",
+  "scripts": {
+    "test": "node --test Tests/JavaScript/*.test.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Somamill/read.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Somamill/read/issues"
+  },
+  "homepage": "https://github.com/Somamill/read#readme",
+  "devDependencies": {
+    "jsdom": "31.0.0"
+  },
+  "private": true
+}

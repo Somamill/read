@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0,str(ROOT/'Sources/ShelfCore/Tools'))
+sys.path.insert(0,str(ROOT/'Sources/ReadCore/Tools'))
 from shelf_config import configured_path
 
 home=Path.home()
@@ -21,7 +21,7 @@ job=home/'Library/LaunchAgents'/f'{label}.plist'
 job.parent.mkdir(parents=True,exist_ok=True)
 subprocess.run(['launchctl','bootout',f'gui/{os.getuid()}',str(job)],capture_output=True)
 for name in ('sync_runtime_watchdog.py','shelf_config.py'):
-    source=ROOT/'Sources/ShelfCore/Tools'/name
+    source=ROOT/'Sources/ReadCore/Tools'/name
     destination=scripts/name
     if source.resolve()!=destination.resolve():shutil.copy2(source,destination)
 value={'Label':label,'ProgramArguments':['/usr/bin/python3',str(scripts/'sync_runtime_watchdog.py')],
