@@ -86,7 +86,8 @@ jobs:
           config={'setupCompleted':True,'connectionsConfigured':True,'paths':{k:str(root/v) for k,v in {'booksRoot':'.','library':'library','state':'state','logs':'logs','scripts':'scripts','import':'inbox'}.items()},'tools':{'docker':'/usr/bin/false','adb':'/usr/bin/false','brew':'/usr/bin/false'}}
           (root/'config.json').write_text(json.dumps(config))
           PYSMOKE
-          SHELF_CONFIG="$RUNNER_TEMP/shelf-smoke/config.json" "$APP/Contents/MacOS/read." -SUEnableAutomaticChecks NO > "$RUNNER_TEMP/shelf-startup.log" 2>&1 &
+          APP_EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
+          SHELF_CONFIG="$RUNNER_TEMP/shelf-smoke/config.json" "$APP/Contents/MacOS/$APP_EXECUTABLE" -SUEnableAutomaticChecks NO > "$RUNNER_TEMP/shelf-startup.log" 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
           for _ in {1..30}; do
