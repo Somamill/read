@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "ShelfCore",
+    name: "ReadCore",
     platforms: [.macOS(.v14), .iOS(.v17)],
-    products: [.library(name: "ShelfCore", targets: ["ShelfCore"])],
+    products: [.library(name: "ReadCore", targets: ["ReadCore"])],
     targets: [
-        .target(name: "ShelfCore", path: "Sources/ShelfCore/ShelfCore"),
-        .testTarget(name: "ShelfCoreTests", dependencies: ["ShelfCore"], path: "Tests/ShelfCoreTests")
+        .target(name: "ReadCore", path: "Sources/ReadCore/ReadCore"),
+        .testTarget(name: "ReadCoreTests", dependencies: ["ReadCore"], path: "Tests/ReadCoreTests")
     ]
 )

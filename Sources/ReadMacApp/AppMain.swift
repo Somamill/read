@@ -5,7 +5,7 @@ import Foundation
 import UniformTypeIdentifiers
 import WebKit
 import SQLite3
-import ShelfCore
+import ReadCore
 import Sparkle
 import Vision
 import PDFKit
@@ -140,6 +140,9 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     private var readerPageLabel:NSTextField?
     private var readerHighlightButton:NSButton?
     private var readerChapterMenu:NSPopUpButton?
+    private let articleQueue=DispatchQueue(label:"app.read.articles.local",qos:.userInitiated)
+    private let articleFetchQueue=DispatchQueue(label:"app.read.articles.network",qos:.utility)
+    private var articleSpeech:NSSpeechSynthesizer?
     private var readerContentsButton:NSButton?
     private var readerContentsPopover:NSPopover?
     private var readerFontMenu:NSPopUpButton?
@@ -292,7 +295,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         webView.autoresizingMask=[.width,.height]
         webView.navigationDelegate=self
         window = NSWindow(contentRect:NSRect(x:0,y:0,width:1240,height:820),styleMask:[.titled,.closable,.miniaturizable,.resizable],backing:.buffered,defer:false)
-        window.title = "Shelf"
+        window.title = "read."
         window.styleMask.insert(.fullSizeContentView)
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
@@ -324,7 +327,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             NSLog("Shelf: loading resource %@",page.path)
             webView.loadFileURL(page,allowingReadAccessTo:page.deletingLastPathComponent())
         } else {
-            loadingLabel.stringValue="Dashboard files are missing. Reinstall Shelf."
+            loadingLabel.stringValue="Dashboard files are missing. Reinstall read.."
             NSLog("Shelf: index.html missing from app resources")
         }
         refresh()
@@ -389,6 +392,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         }
         guard let body=message.body as? [String:Any], let type=body["type"] as? String else { return }
         switch type {
+        case "articles": articleRequest(body)
         case "annotations": annotationRequest(body)
         case "studio": studioRequest(body)
         case "showNavigationMenu": showMoreViews()
@@ -535,10 +539,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             try configuration.set("services.crosspointHealth",crosspoint.isEmpty ? "" : "\(crosspoint)/healthz")
             if let password=form["calibrePassword"] as? String,!password.isEmpty,
                (!saveLocalCredential("calibre-server-password",value:password) || !writePrivateFile(Data((password+"\n").utf8),to:"\(statePath)/calibre-server-password")) {
-                throw NSError(domain:"ShelfSetup",code:1,userInfo:[NSLocalizedDescriptionKey:"Could not save the Calibre password to Shelf’s private local credential file."])
+                throw NSError(domain:"ShelfSetup",code:1,userInfo:[NSLocalizedDescriptionKey:"Could not save the Calibre password to read.’s private local credential file."])
             }
             if let key=form["syncApiKey"] as? String,!key.isEmpty,!saveLocalCredential("sync-api-key",value:key) {
-                throw NSError(domain:"ShelfSetup",code:2,userInfo:[NSLocalizedDescriptionKey:"Could not save the sync API key to Shelf’s private local credential file."])
+                throw NSError(domain:"ShelfSetup",code:2,userInfo:[NSLocalizedDescriptionKey:"Could not save the sync API key to read.’s private local credential file."])
             }
             try configuration.set("setupCompleted",true)
             send("setupSaved",["ok":true])
@@ -577,14 +581,14 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let menu=NSMenu()
         let app=NSMenuItem(); menu.addItem(app)
         let appMenu=NSMenu(); app.submenu=appMenu
-        appMenu.addItem(withTitle:"About Shelf",action:#selector(NSApplication.orderFrontStandardAboutPanel(_:)),keyEquivalent:"")
+        appMenu.addItem(withTitle:"About read.",action:#selector(NSApplication.orderFrontStandardAboutPanel(_:)),keyEquivalent:"")
         appMenu.addItem(.separator())
-        let shelfUpdate=NSMenuItem(title:"Check for Shelf Updates…",action:#selector(checkShelfUpdates),keyEquivalent:"")
+        let shelfUpdate=NSMenuItem(title:"Check for read. Updates…",action:#selector(checkShelfUpdates),keyEquivalent:"")
         if let controller=shelfUpdater { shelfUpdate.target=controller; shelfUpdate.action=#selector(SPUStandardUpdaterController.checkForUpdates(_:)) }
         else { shelfUpdate.target=self }
         appMenu.addItem(shelfUpdate)
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle:"Quit Shelf",action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
+        appMenu.addItem(withTitle:"Quit read.",action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
         let view=NSMenuItem(); view.title="Dashboard"; menu.addItem(view)
         let viewMenu=NSMenu(); view.submenu=viewMenu; navigationMenu=viewMenu
         let updateItem=NSMenuItem(title:"Check for updates",action:#selector(menuUpdate),keyEquivalent:"u"); updateItem.target=self; updateItem.keyEquivalentModifierMask=[.command,.shift]; viewMenu.addItem(updateItem)
@@ -597,6 +601,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         for (index,page) in ["Books","Discover","Statistics","Operations","Connections","Activity","Setup","Updates","Highlights","Review","Highlight Settings","Studio"].enumerated() {
             let item=NSMenuItem(title:page,action:#selector(menuNavigate(_:)),keyEquivalent:index<10 ? String(index==9 ? 0 : index+1) : ""); item.tag=index; item.target=self; viewMenu.addItem(item)
         }
+        let articles=NSMenuItem(title:"Articles",action:#selector(menuArticles),keyEquivalent:"a");articles.keyEquivalentModifierMask=[.command,.shift];articles.target=self;viewMenu.addItem(articles)
         let search=NSMenuItem(title:"Search Library",action:#selector(menuSearch),keyEquivalent:"f"); search.target=self; viewMenu.addItem(search)
         let back=NSMenuItem(title:"Back to Library",action:#selector(menuBack),keyEquivalent:"["); back.target=self; viewMenu.addItem(back)
         NSApp.mainMenu=menu
@@ -618,6 +623,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         if activeReader != nil { closeReader() }
         webView.evaluateJavaScript("window.shelfFocusSearch()",completionHandler:nil)
     }
+    @objc private func menuArticles() { if activeReader != nil { closeReader() };webView.evaluateJavaScript("showPage('articles')",completionHandler:nil) }
     @objc private func menuBack() { if activeReader != nil { closeReader() } else { webView.evaluateJavaScript("showPage('books')",completionHandler:nil) } }
     private var lastAutomaticReadwiseSync=Date.distantPast
     private var readwiseSyncInProgress=false
@@ -976,6 +982,50 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         }
     }
 
+    private func articleResult(_ payload:[String:Any])->[String:Any] {
+        guard let helper=Bundle.main.resourceURL?.appendingPathComponent("read_articles.py").path,
+              let bytes=try? JSONSerialization.data(withJSONObject:payload),let json=String(data:bytes,encoding:.utf8) else { return ["ok":false,"error":"Could not open the article library."] }
+        let result=Self.run(pythonExecutable,[helper],input:json)
+        return (try? JSONSerialization.jsonObject(with:Data(result.output.utf8))) as? [String:Any] ?? ["ok":false,"error":"The article library could not be read."]
+    }
+
+    private func articleRequest(_ body:[String:Any]) {
+        let action=body["action"] as? String ?? "list"
+        if action == "listen" {
+            guard let text=activeReader?["articleText"] as? String else { return }
+            if articleSpeech?.isSpeaking == true { articleSpeech?.stopSpeaking();return }
+            articleSpeech=NSSpeechSynthesizer();articleSpeech?.startSpeaking(text);return
+        }
+        let queue=["fetch","subscribe","refresh"].contains(action) ? articleFetchQueue : articleQueue
+        queue.async { [weak self] in
+            guard let self else { return }
+            var result=self.articleResult(body)
+            if action == "open" || action == "openDocument",result["ok"] as? Bool == true {
+                let annotations=self.annotationResult(["action":"list","rules":["document":result["document"] ?? ""]])
+                result["savedHighlights"]=annotations["items"] ?? []
+                result["focusHighlight"]=body["highlight"] ?? [:]
+            }
+            let response=result
+            DispatchQueue.main.async {
+                if response["ok"] as? Bool != true { self.send("articleError",response);return }
+                if action == "fetch" { self.send("articleFetched",response);return }
+                if action == "search" { self.send("articleSearchResults",response);return }
+                if action == "open" || action == "openDocument",let html=response["htmlPath"] as? String,let directory=response["workDir"] as? String {
+                    self.showReader(response,htmlURL:URL(fileURLWithPath:html),workDirectory:URL(fileURLWithPath:directory));if body["listen"] as? Bool == true { self.articleRequest(["action":"listen"]) };return
+                }
+                if let text=response["exportText"] as? String {
+                    let panel=NSSavePanel();panel.nameFieldStringValue="read-articles.md";panel.allowedContentTypes=[UTType(filenameExtension:"md") ?? .plainText]
+                    panel.beginSheetModal(for:self.window) { answer in
+                        guard answer == .OK,let url=panel.url else { return }
+                        do { try text.write(to:url,atomically:true,encoding:.utf8);self.notify("Articles exported.") }
+                        catch { self.notify("Could not write the export file.") }
+                    };return
+                }
+                self.send("articleData",response)
+            }
+        }
+    }
+
     private func openBook(_ bookId:Int,highlight:[String:Any]?=nil) {
         guard bookId > 0 else { return }
         notify("Preparing your book…")
@@ -1105,6 +1155,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let config=WKWebViewConfiguration(); config.userContentController=content
         let readerData:[String:Any]=[
             "bookId":payload["bookId"] ?? 0,
+            "kind":payload["kind"] ?? "book",
+            "articleId":payload["articleId"] ?? 0,
+            "articleText":payload["articleText"] ?? "",
+            "sourceURL":payload["sourceURL"] ?? "",
             "toc":payload["chapters"] ?? [],
             "document":payload["document"] ?? "",
             "syncDocuments":payload["syncDocuments"] ?? [payload["document"] ?? ""],
@@ -1204,6 +1258,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         web.onEPUBDrop = { [weak self] urls in self?.queueEPUBImports(urls) }
         web.navigationDelegate=self
         let container=NSView(frame:.zero)
+        activeReader=readerData
         let toolbar=makeReaderToolbar()
         container.addSubview(web); container.addSubview(toolbar)
         for view in [toolbar,web] { view.translatesAutoresizingMaskIntoConstraints=false }
@@ -1220,7 +1275,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         pendingReaderResume=nil
         lastLocalReaderPosition=nil
         web.loadFileURL(htmlURL,allowingReadAccessTo:workDirectory)
-        window.contentView=container; window.title="\(title) · Shelf"; window.minSize=NSSize(width:720,height:520)
+        window.contentView=container; window.title="\(title) · read."; window.minSize=NSSize(width:720,height:520)
         window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps:true)
         window.makeFirstResponder(web)
         if let old=readerKeyMonitor { NSEvent.removeMonitor(old) }
@@ -1270,7 +1325,11 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         previous.toolTip="Previous page (←)"; next.toolTip="Next page (→)"; previous.setAccessibilityLabel("Previous page"); next.setAccessibilityLabel("Next page")
         highlight.setAccessibilityLabel("Highlight selection")
         appearance.setAccessibilityLabel("Reading appearance")
-        let bottom=NSStackView(views:[back,previous,pages,next,contents,highlight,appearance]); bottom.orientation = .horizontal; bottom.alignment = .centerY; bottom.distribution = .fill; bottom.spacing=11; bottom.translatesAutoresizingMaskIntoConstraints=false
+        let bottom=NSStackView(views:[back,previous,pages,next,contents,highlight,appearance]);
+        if activeReader?["kind"] as? String == "article" {
+            let listen=NSButton(image:NSImage(systemSymbolName:"speaker.wave.2",accessibilityDescription:"Listen or stop listening")!,target:self,action:#selector(toggleArticleSpeech));listen.bezelStyle = .rounded;listen.toolTip="Listen or stop listening";listen.setAccessibilityLabel("Listen or stop listening");listen.widthAnchor.constraint(equalToConstant:32).isActive=true;bottom.addArrangedSubview(listen)
+        }
+         bottom.orientation = .horizontal; bottom.alignment = .centerY; bottom.distribution = .fill; bottom.spacing=11; bottom.translatesAutoresizingMaskIntoConstraints=false
         bottom.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
         let dock=NSVisualEffectView(frame:.zero); dock.translatesAutoresizingMaskIntoConstraints=false; dock.material = .hudWindow; dock.blendingMode = .withinWindow; dock.state = .active
         dock.wantsLayer=true; dock.layer?.cornerRadius=20; dock.layer?.masksToBounds=true; dock.layer?.borderWidth=1; dock.layer?.borderColor=NSColor.separatorColor.withAlphaComponent(0.28).cgColor
@@ -1283,6 +1342,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         ])
         return toolbar
     }
+
+    @objc private func toggleArticleSpeech() { articleRequest(["action":"listen"]) }
 
     @objc private func showReaderContents(_ sender:NSButton) {
         guard !readerChapters.isEmpty else { return }
@@ -1298,7 +1359,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     @objc private func showReaderAppearance(_ sender:NSButton) {
         if let shown=readerSettingsPopover,shown.isShown { shown.performClose(sender); return }
         let font=NSPopUpButton(frame:.zero,pullsDown:false); font.addItems(withTitles:["Noto Sans","Noto Serif","System"]); font.target=self; font.action=#selector(readerSelectFont(_:)); font.selectItem(at:["sans","serif","system"].firstIndex(of:readerFontChoice) ?? 0); font.widthAnchor.constraint(equalToConstant:156).isActive=true; font.controlSize = .small; readerFontMenu=font
-        let theme=NSPopUpButton(frame:.zero,pullsDown:false); theme.addItems(withTitles:["Follow Shelf","Bright","Paper","Night","Black (OLED)"]); theme.target=self; theme.action=#selector(readerSelectTheme(_:)); theme.selectItem(at:["auto","light","paper","night","oled"].firstIndex(of:UserDefaults.standard.string(forKey:"readerTheme") ?? "auto") ?? 0); theme.widthAnchor.constraint(equalToConstant:156).isActive=true; theme.controlSize = .small; readerThemeMenu=theme
+        let theme=NSPopUpButton(frame:.zero,pullsDown:false); theme.addItems(withTitles:["Follow read.","Bright","Paper","Night","Black (OLED)"]); theme.target=self; theme.action=#selector(readerSelectTheme(_:)); theme.selectItem(at:["auto","light","paper","night","oled"].firstIndex(of:UserDefaults.standard.string(forKey:"readerTheme") ?? "auto") ?? 0); theme.widthAnchor.constraint(equalToConstant:156).isActive=true; theme.controlSize = .small; readerThemeMenu=theme
         let spacing=NSPopUpButton(frame:.zero,pullsDown:false); spacing.addItems(withTitles:["Compact","Normal","Relaxed"]); spacing.target=self; spacing.action=#selector(readerSelectSpacing(_:)); spacing.selectItem(at:["compact","normal","relaxed"].firstIndex(of:UserDefaults.standard.string(forKey:"readerSpacing") ?? "normal") ?? 1); spacing.widthAnchor.constraint(equalToConstant:156).isActive=true; spacing.controlSize = .small; readerSpacingMenu=spacing
         let size=NSTextField(labelWithString:"\(Int(readerFontSize)) pt"); size.alignment = .center; size.widthAnchor.constraint(equalToConstant:46).isActive=true; readerSizeLabel=size
         let minus=NSButton(title:"−",target:self,action:#selector(readerDecreaseText)); minus.bezelStyle = .rounded; minus.controlSize = .small
@@ -1364,7 +1425,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         readerProgressLabel?.stringValue="\(Int((percentage*100).rounded()))%"
         let page=max(1,(info["page"] as? Int) ?? 1),pages=max(1,(info["pages"] as? Int) ?? 1)
         readerPageLabel?.stringValue="\(page) / \(pages)"
-        if let chapter=info["chapter"] as? Int,let menu=readerChapterMenu,chapter>=0,chapter<menu.numberOfItems { menu.selectItem(at:chapter);readerContentsButton?.title=readerChapters[chapter]["title"] as? String ?? "Contents" }
+        if let chapter=info["chapter"] as? Int,let menu=readerChapterMenu,chapter>=0,chapter<menu.numberOfItems,chapter<readerChapters.count { menu.selectItem(at:chapter);readerContentsButton?.title=readerChapters[chapter]["title"] as? String ?? "Contents" }
     }
 
     private func navigateReaderChapter(_ offset:Int) {
@@ -1401,6 +1462,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         if let monitor=readerKeyMonitor { NSEvent.removeMonitor(monitor); readerKeyMonitor=nil }
         let directory=readerTempDirectory
         let removeDirectory = !readerWorkIsPersistentCache
+        articleSpeech?.stopSpeaking();articleSpeech=nil
         readerWebView?.stopLoading()
         readerWebView?.configuration.userContentController.removeScriptMessageHandler(forName:"reader")
         readerSettingsPopover?.performClose(nil); readerSettingsPopover=nil
@@ -1408,7 +1470,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         readerWebView=nil; readerContentView=nil; activeReader=nil; readerTempDirectory=nil; readerWorkIsPersistentCache=false
         readerChapterMenu=nil; readerFontMenu=nil; readerThemeMenu=nil; readerSpacingMenu=nil; readerSizeLabel=nil; readerProgressSlider=nil; readerProgressLabel=nil; readerPageLabel=nil; readerHighlightButton=nil; readerChapters=[]
         window.contentView=dashboardContentView
-        window.title="Shelf"
+        window.title="read."
         if let directory,removeDirectory { DispatchQueue.main.asyncAfter(deadline:.now()+3) { try? FileManager.default.removeItem(at:directory) } }
     }
 
@@ -1417,7 +1479,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
               let reader=activeReader else { return }
         var item=body; item.removeValue(forKey:"type")
         item["bookId"]=reader["bookId"] ?? 0; item["title"]=reader["title"] ?? ""
-        item["author"]=reader["authors"] ?? ""; item["source"]="Shelf"
+        item["author"]=reader["authors"] ?? ""; item["source"]=(reader["kind"] as? String == "article") ? "read. articles" : "Shelf"
         item["document"]=reader["document"] ?? ""
         localAnnotationQueue.async { [weak self] in
             guard let self else { return }
@@ -1451,7 +1513,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
                     self.notify(response["error"] as? String ?? "Readwise could not validate this token."); return
                 }
                 guard self.saveLocalCredential("readwise-reader-token",value:token) else {
-                    self.notify("Could not save the validated token to Shelf’s private local credential file."); return
+                    self.notify("Could not save the validated token to read.’s private local credential file."); return
                 }
                 self.send("readwiseTokenSaved",["connected":true])
                 self.notify("Readwise access token verified and saved locally on this Mac.")
@@ -1486,7 +1548,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             guard alert.runModal() == .alertFirstButtonReturn else { return }
             token=field.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)
                 guard !token.isEmpty,saveLocalCredential("readwise-reader-token",value:token) else {
-                notify("Could not save the Readwise token to Shelf’s private local credential file."); return
+                notify("Could not save the Readwise token to read.’s private local credential file."); return
             }
         }
         let syncKey=syncAuthKey()
@@ -1565,7 +1627,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func studioResult(_ input:[String:Any])->[String:Any] {
         let helper=Bundle.main.resourceURL?.appendingPathComponent("shelf_studio.py").path
-            ?? "\(configuration.path("project",fallback:"\(home)/Shelf"))/Sources/ShelfCore/Tools/shelf_studio.py"
+            ?? "\(configuration.path("project",fallback:"\(home)/Shelf"))/Sources/ReadCore/Tools/shelf_studio.py"
         guard let data=try? JSONSerialization.data(withJSONObject:input),let source=String(data:data,encoding:.utf8) else { return ["ok":false,"error":"Could not prepare Studio operation."] }
         let result=Self.run(pythonExecutable,[helper],input:source)
         return (try? JSONSerialization.jsonObject(with:Data(result.output.utf8))) as? [String:Any]
@@ -1726,7 +1788,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func annotationResult(_ payload:[String:Any])->[String:Any] {
         let helper=Bundle.main.resourceURL?.appendingPathComponent("shelf_annotations.py").path
-            ?? "\(configuration.path("project",fallback:"\(home)/Shelf"))/Sources/ShelfCore/Tools/shelf_annotations.py"
+            ?? "\(configuration.path("project",fallback:"\(home)/Shelf"))/Sources/ReadCore/Tools/shelf_annotations.py"
         guard let data=try? JSONSerialization.data(withJSONObject:payload),let json=String(data:data,encoding:.utf8) else {
             return ["ok":false,"error":"Could not encode annotations."]
         }
@@ -1780,6 +1842,9 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
                 self.notify("Export folder saved. Scheduled exports use Shelf-managed files in this folder.")
                 self.annotationRequest(["action":"list"])
             }; return
+        }
+        if action == "open",let item=body["item"] as? [String:Any],item["source"] as? String == "read. articles",let location=item["location"] as? [String:Any],let document=location["document"] as? String {
+            articleRequest(["action":"openDocument","document":document,"highlight":item]);return
         }
         if action == "open" {
             if let item=body["item"] as? [String:Any],(item["bookId"] as? Int ?? 0)==0,
@@ -1974,6 +2039,21 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     }
 
     private func syncReaderProgress(_ incoming:[String:Any]) {
+        if activeReader?["kind"] as? String == "article",let identifier=activeReader?["articleId"] as? Int {
+            let percentage=(incoming["percentage"] as? NSNumber)?.doubleValue ?? 0
+            articleQueue.async { [weak self] in
+                guard let self else { return }
+                let result=self.articleResult(["action":"progress","id":identifier,"percentage":percentage])
+                DispatchQueue.main.async {
+                    guard (self.activeReader?["articleId"] as? Int)==identifier else { return }
+                    if result["ok"] as? Bool == true {
+                        self.readerWebView?.evaluateJavaScript("window.readerAckProgress(\(percentage))",completionHandler:nil)
+                        self.send("articleData",result)
+                    } else { self.setReaderStatus("Could not save this article’s position locally.") }
+                }
+            }
+            return
+        }
         var body=incoming
         guard let document=incoming["document"] as? String,
               document.range(of:#"^[0-9a-fA-F]{32}$"#,options:.regularExpression) != nil,
@@ -2524,7 +2604,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     private func confirmUpdateDashboard() { checkShelfUpdates() }
 
     @objc private func checkShelfUpdates() {
-        guard let controller=shelfUpdater else { notify("Automatic updates need a release configured with Shelf’s update-signing key. See the updater setup guide."); return }
+        guard let controller=shelfUpdater else { notify("Automatic updates need a release configured with read.’s update-signing key. See the updater setup guide."); return }
         guard controller.updater.canCheckForUpdates else { notify("An update check or installation is already in progress."); return }
         controller.checkForUpdates(nil)
     }
@@ -3182,11 +3262,11 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private static func run(_ executable:String,_ args:[String],input:String?=nil)->(code:Int32,output:String) {
         if executable == "/usr/bin/false" {
-            return (127, "Shelf's Python runtime is missing. Reinstall Shelf from its complete DMG.")
+            return (127, "read.’s Python runtime is missing. Reinstall read. from its complete DMG.")
         }
         let p=Process(); p.executableURL=URL(fileURLWithPath:executable); p.arguments=args
         if executable.contains("/Contents/Resources/PythonRuntime/") {
-            // Keep CPython bytecode caches outside Shelf.app. Writing __pycache__
+            // Keep CPython bytecode caches outside read.app. Writing __pycache__
             // into the signed bundle invalidates its code signature after launch.
             if let caches=FileManager.default.urls(for:.cachesDirectory,in:.userDomainMask).first {
                 let cacheDirectory=caches.appendingPathComponent("Shelf/PythonCache",isDirectory:true)

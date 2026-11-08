@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import ShelfCore
+@testable import ReadCore
 
 final class SetupModelsTests: XCTestCase {
     func testShelfProfileDefaultsAreUsable() {

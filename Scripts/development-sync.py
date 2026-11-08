@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 LABEL = 'app.shelf.development-sync'
-REMOTE = 'https://github.com/Somamill/Shelf.git'
+REMOTE = 'https://github.com/Somamill/read.git'
 
 
 def command(args, cwd=None, capture=False, env=None):
@@ -71,7 +71,7 @@ def sync(repo, state, remote=REMOTE, builder=build):
                 return False
             command(['git', '-C', str(repo), 'merge', '--ff-only', target])
         marker = state / 'installed-commit'
-        app = Path.home() / 'Applications/Shelf Dev.app'
+        app = Path.home() / 'Applications/read Dev.app'
         if marker.exists() and marker.read_text().strip() == target and app.exists():
             print('Shelf Dev is current.', flush=True)
             return True

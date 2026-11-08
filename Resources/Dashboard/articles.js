@@ -1,0 +1,60 @@
+/* read. Articles: local-first read later, RSS, and a personal weekly digest. */
+titles.articles=['Articles','A quiet place for the web. Saved locally, ready offline.'];
+pageOrder.splice(1,0,'articles');
+let articleLibrary={items:[],feeds:[]},articleFilter='inbox',articleSearch='',articleBusy=false;
+let articleSearchMatches=null,articleSearchTimer;
+const articlePost=(action,extra={})=>post({type:'articles',action,...extra});
+const articleSection=document.createElement('section');
+articleSection.id='articles';articleSection.className='page';
+articleSection.innerHTML=`<div class="article-header"><div><p class="eyebrow">READ LATER, THINK DEEPER</p><h2>Your reading inbox</h2><p>Articles, feeds, and a weekly selection. Yours to keep.</p></div><button class="small-btn" id="exportArticles">Export Markdown</button></div>
+<form id="saveArticleForm" class="article-save"><label for="articleURL" class="sr-only">Article URL</label><input id="articleURL" type="url" required placeholder="Paste an article URL…" autocomplete="off"><button class="primary-btn" type="submit">＋ Save article</button></form>
+<div id="articleNotice" role="status" aria-live="polite"></div>
+<div class="article-tools"><div id="articleFilters" class="article-filters" aria-label="Filter articles"></div><input id="articleSearch" type="search" placeholder="Search your articles…" aria-label="Search articles"></div>
+<div id="articleDigestIntro"></div><div id="articleList" class="article-list"></div>
+<details class="article-feeds"><summary>RSS & Atom subscriptions <span id="articleFeedCount"></span></summary><p>New stories arrive in your inbox. Feeds refresh at most every 15 minutes while Articles is open. Full article text is saved when you open a feed story.</p><form id="subscribeArticleForm" class="article-save"><label for="articleFeedURL" class="sr-only">RSS or Atom feed URL</label><input id="articleFeedURL" type="url" required placeholder="Paste an RSS or Atom feed URL…"><button class="small-btn" type="submit">Subscribe</button></form><div id="articleFeeds"></div></details>`;
+document.querySelector('main').insertBefore(articleSection,document.querySelector('main footer'));
+const articleNav=document.createElement('a');articleNav.dataset.page='articles';articleNav.innerHTML='<span class="nav-symbol">≡</span><small>Articles</small>';articleNav.setAttribute('role','button');articleNav.tabIndex=0;articleNav.addEventListener('click',()=>showPage('articles'));articleNav.addEventListener('keydown',e=>{if(e.key==='Enter')showPage('articles')});document.querySelector('.taskbar').insertBefore(articleNav,document.querySelector('.taskbar a[data-page="discover"]'));
+const originalShowPage=showPage;
+showPage=function(id){originalShowPage(id);if(id==='articles'){articlePost('list');articlePost('refresh')}};
+function articleNotice(text,error=false){const el=document.getElementById('articleNotice');el.textContent=text;el.className=error?'article-error':'article-notice'}
+function articleMinutes(x){return Math.max(1,Math.ceil((x.characters||0)/1200))}
+function renderArticles(){
+ const filters=[['inbox','Inbox'],['later','Later'],['digest','This week'],['favorite','Starred'],['archive','Finished'],['all','All'],['trash','Trash']];
+ document.getElementById('articleFilters').innerHTML=filters.map(([id,label])=>`<button class="small-btn ${articleFilter===id?'selected':''}" data-article-filter="${id}" aria-pressed="${articleFilter===id}">${label}</button>`).join('');
+ const query=articleSearch.toLocaleLowerCase();let rows=articleLibrary.items.filter(x=>(articleFilter==='all'?x.status!=='trash':articleFilter==='favorite'?x.favorite&&x.status!=='trash':articleFilter==='digest'?['inbox','later'].includes(x.status):x.status===articleFilter)&&(!query||(articleSearchMatches?articleSearchMatches.has(x.id):[x.title,x.author,x.site,x.tags,x.excerpt].join(' ').toLocaleLowerCase().includes(query))));
+ if(articleFilter==='digest')rows=rows.sort((a,b)=>Number(b.favorite)-Number(a.favorite)||b.saved-a.saved).slice(0,5);
+ const minutes=rows.reduce((sum,x)=>sum+articleMinutes(x),0);
+ document.getElementById('articleDigestIntro').innerHTML=articleFilter==='digest'?`<div class="article-digest"><h3>A little space to read.</h3><p>${rows.length} stories · about ${minutes} minutes. A personal selection from your inbox, with starred stories first. No algorithmic feed or paid AI service.</p><button class="small-btn" onclick="showPage('review')">Revisit your highlights →</button></div>`:'';
+ document.getElementById('articleList').innerHTML=rows.length?rows.slice(0,100).map(x=>`<article class="article-card"><div class="article-card-main"><small>${esc(x.site)} · ${articleMinutes(x)} min${x.fetched?' · Offline text saved':' · Feed preview'}${x.progress>0?' · '+Math.round(x.progress*100)+'% read':''}</small><h3><button class="article-title" data-article-open="${x.id}">${esc(x.title)}</button></h3><p>${esc(x.excerpt)}</p><small>${esc(x.author)}${x.tags?' · '+esc(x.tags):''}</small><details><summary>Tags & source</summary><label>Tags <input aria-label="Tags for ${esc(x.title)}" data-article-tags="${x.id}" value="${esc(x.tags)}" placeholder="philosophy, technology…"></label><p><button class="small-btn" data-article-source="${x.id}">Open original ↗</button><button class="small-btn" data-article-export="${x.id}">Export text</button></p></details></div><div class="article-card-actions"><button class="small-btn" data-article-open="${x.id}">${x.progress>0?'Continue':'Read'}</button><button class="small-btn" data-article-listen="${x.id}">◖ Listen</button><button class="small-btn" data-article-star="${x.id}" aria-label="${x.favorite?'Unstar':'Star'} ${esc(x.title)}">${x.favorite?'★':'☆'}</button>${x.status==='trash'?`<button class="small-btn" data-article-status="${x.id}" data-status="inbox">Restore</button>`:`<button class="small-btn" data-article-status="${x.id}" data-status="${x.status==='archive'?'inbox':'archive'}">${x.status==='archive'?'Move to inbox':'Mark finished'}</button><button class="small-btn" data-article-status="${x.id}" data-status="later">Later</button><button class="small-btn" data-article-status="${x.id}" data-status="trash">Trash</button>`}</div></article>`).join(''):'<div class="empty-books"><h3>Room for something worth reading.</h3><p>Save an article above, or subscribe to a feed. Your text, progress, notes, and highlights stay on this Mac. Finished articles live in Finished; Trash can be restored.</p></div>';
+ document.getElementById('articleFeedCount').textContent='· '+articleLibrary.feeds.length;
+ document.getElementById('articleFeeds').innerHTML=articleLibrary.feeds.map(x=>`<div class="article-feed"><div><b>${esc(x.title)}</b><p>${esc(x.error||('Last checked '+new Date(x.checked*1000).toLocaleString()))}</p></div><button class="small-btn" data-article-unsubscribe="${esc(x.url)}">Unsubscribe</button></div>`).join('');
+}
+function openArticle(identifier,listen=false){const item=articleLibrary.items.find(x=>x.id===identifier);if(!item)return;if(!item.fetched){articleNotice('Saving the full article for offline reading…');articlePost('fetch',{url:item.url,articleId:identifier,listen});pendingArticleListen=listen;return}articlePost('open',{id:identifier,listen})}
+let pendingArticleListen=false;
+window.articleData=value=>{articleBusy=false;if(value.items){articleLibrary=value;renderArticles()}if(value.savedId){articleNotice('Article saved locally.');document.getElementById('articleURL').value='';if(value.openAfterSave)articlePost('open',{id:value.savedId,listen:pendingArticleListen});pendingArticleListen=false}};
+window.articleSearchResults=value=>{articleSearchMatches=new Set(value.matches||[]);renderArticles()};
+window.articleError=value=>{articleBusy=false;articleNotice(value.error||'Could not save this article. Please try again.',true)};
+window.articleFetched=value=>{
+ try{
+  const item=extractSavedArticle(value.html,value.url);if(value.articleId)item.articleId=value.articleId;
+  articlePost('save',{item,openAfterSave:!!value.articleId});
+ }catch(error){window.articleError({error:error.message})}
+};
+document.getElementById('saveArticleForm').addEventListener('submit',e=>{e.preventDefault();if(articleBusy)return;articleBusy=true;articleNotice('Preparing a clean, offline reading copy…');articlePost('fetch',{url:document.getElementById('articleURL').value})});
+document.getElementById('subscribeArticleForm').addEventListener('submit',e=>{e.preventDefault();articleNotice('Checking this feed…');articlePost('subscribe',{url:document.getElementById('articleFeedURL').value})});
+document.getElementById('articleSearch').addEventListener('input',e=>{articleSearch=e.target.value;articleSearchMatches=null;renderArticles();clearTimeout(articleSearchTimer);articleSearchTimer=setTimeout(()=>articlePost('search',{query:articleSearch}),180)});
+document.getElementById('exportArticles').addEventListener('click',()=>articlePost('export'));
+articleSection.addEventListener('change',e=>{if(e.target.dataset.articleTags)articlePost('update',{id:Number(e.target.dataset.articleTags),tags:e.target.value})});
+articleSection.addEventListener('click',e=>{
+ const button=e.target.closest('button');if(!button)return;const d=button.dataset;
+ if(d.articleFilter){articleFilter=d.articleFilter;renderArticles()}
+ if(d.articleOpen)openArticle(Number(d.articleOpen));
+ if(d.articleListen)openArticle(Number(d.articleListen),true);
+ if(d.articleStar){const item=articleLibrary.items.find(x=>x.id===Number(d.articleStar));articlePost('update',{id:item.id,favorite:!item.favorite})}
+ if(d.articleStatus)articlePost('update',{id:Number(d.articleStatus),status:d.status});
+ if(d.articleSource){const item=articleLibrary.items.find(x=>x.id===Number(d.articleSource));post({type:'openBookLink',url:item.url})}
+ if(d.articleExport)articlePost('export',{id:Number(d.articleExport)});
+ if(d.articleUnsubscribe)articlePost('unsubscribe',{url:d.articleUnsubscribe});
+});
+setInterval(()=>{if(activePage==='articles'&&!document.hidden)articlePost('refresh')},900000);
+renderArticles();

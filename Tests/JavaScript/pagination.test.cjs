@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('Sources/ShelfMacApp/AppMain.swift','utf8');
+const source=fs.readFileSync('Sources/ReadMacApp/AppMain.swift','utf8');
 const code=source.slice(source.indexOf('function layoutPages(){'),source.indexOf('\n              function chapterIndex()'));
 test('font/layout changes preserve saved progress instead of an obsolete page number',()=>{
  const context={readerViewport:{scrollLeft:0},readerFlow:{style:{},scrollWidth:730*1000},step:()=>1000,pageCount:200,currentPage:8,userHasNavigated:false,window:{readerBook:{resumePercentage:.0382}}};

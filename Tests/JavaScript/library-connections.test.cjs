@@ -19,5 +19,5 @@ test('an ebook file URL cannot mask audiobook artwork and missing Apple artwork 
 });
 test('local highlights are not introduced as a Readwise library',()=>{
  assert.doesNotMatch(source,/My Readwise library/);
- assert.match(source,/Your highlights are saved locally in Shelf/);
+ assert.match(source,/Your highlights are saved locally in read\./);
 });

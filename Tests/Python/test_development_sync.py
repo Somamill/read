@@ -41,7 +41,7 @@ class DevelopmentSyncTests(unittest.TestCase):
 
     def builder(self, repo):
         self.builds.append(sync.git(repo, 'rev-parse', 'HEAD'))
-        (self.root / 'Applications/Shelf Dev.app').mkdir(parents=True, exist_ok=True)
+        (self.root / 'Applications/read Dev.app').mkdir(parents=True, exist_ok=True)
 
     def perform(self, builder=None):
         return sync.sync(self.repo, self.state, str(self.remote), builder or self.builder)

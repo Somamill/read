@@ -2,7 +2,7 @@
 from pathlib import Path
 import sys
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'))
 from shelf_studio import transcribe_local
 
 

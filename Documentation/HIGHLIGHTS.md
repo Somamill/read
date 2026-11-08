@@ -1,7 +1,7 @@
 # Highlights, review, and exports
 
-Shelf stores annotations in an owner-only SQLite database at
-`~/Library/Application Support/Shelf/annotations.sqlite`. No account is required.
+read. stores annotations in an owner-only SQLite database at
+`~/Library/Application Support/read./annotations.sqlite`. No account is required.
 Existing reader highlights migrate automatically, once; the original preferences
 are retained. New annotations use the SQLite library as their source of truth.
 
@@ -17,7 +17,7 @@ book, and review frequency. Source text remains unchanged. **Archive** hides a
 passage locally; it never deletes a source annotation or a remote highlight.
 Re-importing the same provider identity preserves its archive and personal note.
 Provider changes appear under **Source changes to review**, where you can keep
-Shelf's version or explicitly accept the source passage and note.
+read.'s version or explicitly accept the source passage and note.
 
 **Open in book** uses text offsets plus surrounding context. It refuses to guess
 when the same quote occurs more than once without a reliable position. Imported
@@ -33,7 +33,7 @@ remove its highlights.
 
 **Import** supports:
 
-- Shelf/generic JSON lists with `text`, `title`, `author`, `note`, `tags`, `source`,
+- read./generic JSON lists with `text`, `title`, `author`, `note`, `tags`, `source`,
   and optional `sourceId`, `bookId`, and `location` fields.
 - KOReader JSON exports with `entries`, or entries grouped under book titles.
 - Kindle `My Clippings.txt` highlight blocks in English, German, or Japanese.
@@ -68,7 +68,7 @@ not mark it reviewed. Enter schedules the next week; the right arrow skips.
 Settings controls session size (1–50), days of the week, a source collection,
 excluded tags/books, and a local reminder time. Each highlight has a frequency
 weight; zero excludes it. Snooze suppresses reviews for 24 hours. Reminders are
-in-app notices while Shelf is open on the dashboard, not system notifications or
+in-app notices while read. is open on the dashboard, not system notifications or
 an always-running background agent.
 
 ## Export
@@ -82,9 +82,9 @@ Markdown can be opened in Obsidian, Logseq, or any text editor. This is a portab
 file export, not a direct account integration with those apps. The standard
 macOS save dialog lets you choose each export's name and location.
 
-Choose an export folder to enable automatic snapshots while Shelf is open.
-The filename pattern applies to these snapshots. Shelf creates content-addressed,
-Shelf-prefixed files when the output changes and does not overwrite existing
+Choose an export folder to enable automatic snapshots while read. is open.
+The filename pattern applies to these snapshots. read. creates content-addressed,
+read.-prefixed files when the output changes and does not overwrite existing
 notes. Moving the folder or losing access requires selecting it again. No process
 is expected to survive app termination or an environment snapshot.
 
@@ -96,14 +96,14 @@ highlights can be queued individually with **Queue export**. Destinations are:
 - **Readwise Highlights**: sends passages, personal notes, and book metadata through
   the Highlights API.
 - **Readwise Reader**: sends passages, notes, and tags to a matching Reader EPUB.
-  Shelf can separately import Reader highlights and reading progress; both import
+  read. can separately import Reader highlights and reading progress; both import
   types have toggles. Progress requires a configured KOReader/CrossPoint endpoint;
   highlight imports do not.
 - **CrossPoint annotations**: sends passages and their locations using a device
   file fingerprint and the existing sync credentials.
 
 The Readwise destinations share the token configured in Connections. Choose
-Sync now or enable automatic uploads while Shelf is open. Each destination can
+Sync now or enable automatic uploads while read. is open. Each destination can
 be paused. Queued jobs persist across restarts; each pass processes at most five.
 Connection summaries show pending counts, attention counts, and successful uploads.
 Other providers managed by CrossPoint remain configured in CrossPoint itself.
@@ -124,17 +124,17 @@ user's accounts; the automated tests use controlled service responses.
 ## Your full Readwise library
 
 In Connections, paste the access token from https://readwise.io/access_token and
-choose **Connect & import** once. If a token is already saved, Shelf reuses it
+choose **Connect & import** once. If a token is already saved, read. reuses it
 automatically on the next launch. Never put the token in chat or a Git commit.
 Every book/article/source available through Readwise's Highlights export API is
-imported into Shelf's local annotation database, including titles absent from
+imported into read.'s local annotation database, including titles absent from
 Calibre. Readwise Reader documents without highlights are not imported as books.
 
 The Highlights page shows one **Sync now** button, saved highlight count, import
-progress, last completed sync, and any retry/reconnection message. Shelf completes
+progress, last completed sync, and any retry/reconnection message. read. completes
 paginated imports in the background, resumes after interruption, and checks for
 changes every 15 minutes while running, including while minimized. Pause automatic
-imports in Settings. Quit Shelf to stop background work. The existing Reader
+imports in Settings. Quit read. to stop background work. The existing Reader
 progress tools and outgoing destinations are under an expandable advanced section;
 importing never queues or sends your highlights back to a provider.
 
@@ -157,8 +157,8 @@ use Readwise-shaped fixtures and do not establish access to your account.
 ## Reading settings
 
 Choose whether to remember appearance per book, restore the last position, and
-open ordinary books in Shelf or the default macOS reader. Opening a specific
-highlight always uses Shelf. Font, size, theme, and spacing remain available in
+open ordinary books in read. or the default macOS reader. Opening a specific
+highlight always uses read. Font, size, theme, and spacing remain available in
 the reader's Appearance popover. Opening with the system reader locates the source
 file without converting it first.
 

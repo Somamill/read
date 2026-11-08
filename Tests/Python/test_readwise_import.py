@@ -9,7 +9,7 @@ import urllib.error
 import urllib.parse
 from unittest.mock import patch
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'))
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'))
 import shelf_annotations as annotations
 
 

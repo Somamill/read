@@ -1,3 +1,12 @@
+## 0.3.0 — read.
+
+- Rename the app and GitHub project to read. while preserving existing libraries, credentials, permission identities, and signed update compatibility.
+- Add a local article library: save clean web text for offline reading, search full text, organize Inbox/Later/Finished, add tags and stars, and restore items from Trash.
+- Read and highlight articles in the native paginated reader; highlights and positions work without Readwise or a paid account.
+- Subscribe to RSS/Atom feeds with deduplication and a 15-minute refresh limit; make a personal weekly selection from your saved stories.
+- Listen with macOS system speech and export articles as Markdown.
+- Vendor Mozilla Readability 0.6.0 and DOMPurify 3.4.17 with their license notices; sanitize stored content independently and omit remote tracking images from offline copies.
+
 ## 0.2.6
 
 - Restore the Discover screen and its search and trending controls.
@@ -349,5 +358,5 @@
 - Adds a native macOS dashboard for a local Calibre library, EPUB reading, progress, and highlights.
 - Adds first-run setup for a Calibre library, import folder, cloud-synced intake folder, devices, and connected services.
 - Adds per-user configuration and Keychain storage for credentials.
-- Adds shared `ShelfCore` models to support a future iPhone client.
+- Adds shared `ReadCore` models to support a future iPhone client.
 - Documents current limits: OneDrive and Google Drive use their macOS sync clients; direct provider OAuth and the iPhone app are not included yet.

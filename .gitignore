@@ -34,3 +34,5 @@ metadata.db
 *.pdf
 backups/
 state/
+
+node_modules/

@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EC4C211976F788C55AFB7619"
-               BuildableName = "Shelf.app"
-               BlueprintName = "Shelf"
-               ReferencedContainer = "container:Shelf.xcodeproj">
+               BlueprintIdentifier = "6E231AF318DE33EFAA6BDC82"
+               BuildableName = "Read.app"
+               BlueprintName = "Read"
+               ReferencedContainer = "container:Read.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EC4C211976F788C55AFB7619"
-            BuildableName = "Shelf.app"
-            BlueprintName = "Shelf"
-            ReferencedContainer = "container:Shelf.xcodeproj">
+            BlueprintIdentifier = "6E231AF318DE33EFAA6BDC82"
+            BuildableName = "Read.app"
+            BlueprintName = "Read"
+            ReferencedContainer = "container:Read.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -55,10 +55,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EC4C211976F788C55AFB7619"
-            BuildableName = "Shelf.app"
-            BlueprintName = "Shelf"
-            ReferencedContainer = "container:Shelf.xcodeproj">
+            BlueprintIdentifier = "6E231AF318DE33EFAA6BDC82"
+            BuildableName = "Read.app"
+            BlueprintName = "Read"
+            ReferencedContainer = "container:Read.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -74,10 +74,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EC4C211976F788C55AFB7619"
-            BuildableName = "Shelf.app"
-            BlueprintName = "Shelf"
-            ReferencedContainer = "container:Shelf.xcodeproj">
+            BlueprintIdentifier = "6E231AF318DE33EFAA6BDC82"
+            BuildableName = "Read.app"
+            BlueprintName = "Read"
+            ReferencedContainer = "container:Read.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

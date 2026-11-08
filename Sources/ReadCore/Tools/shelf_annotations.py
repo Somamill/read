@@ -177,6 +177,7 @@ class Library:
                and (not rules.get('notes') or x['note'].strip())
                and (not rules.get('bookId') or str(x['bookId'])==str(rules['bookId']))
                and (not rules.get('source') or x['source']==rules['source'])
+               and (not rules.get('document') or x.get('location',{}).get('document')==rules['document'])
                and (not rules.get('tag') or rules['tag'] in x['tags'])
                and (not rules.get('author') or rules['author'].casefold() in x['author'].casefold())
                and (not rules.get('since') or int(x['updatedAt'])>=int(rules['since']))

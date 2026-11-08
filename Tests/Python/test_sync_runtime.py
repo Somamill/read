@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-TOOLS=Path(__file__).resolve().parents[2]/'Sources/ShelfCore/Tools'
+TOOLS=Path(__file__).resolve().parents[2]/'Sources/ReadCore/Tools'
 sys.path.insert(0,str(TOOLS))
 spec=importlib.util.spec_from_file_location('runtime_watchdog',TOOLS/'sync_runtime_watchdog.py')
 watchdog=importlib.util.module_from_spec(spec)

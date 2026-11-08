@@ -32,7 +32,7 @@ terminated together. A one-hour processing timeout prevents a stuck job.
 On a Mac, install whisper.cpp and ffmpeg from a trusted source, obtain a model
 from the [official whisper.cpp model collection](https://github.com/ggml-org/whisper.cpp/tree/master/models),
 verify the published checksum, then select the executable, model, and ffmpeg in
-Studio. Shelf does not silently install or execute a downloaded program. An
+Studio. read. does not silently install or execute a downloaded program. An
 English-only `.en` model recognizes English; choose a multilingual model for
 Japanese and other languages. Audio language accepts `auto` or a code such as
 `en` or `ja`. The selected language is for recognition, not translation.
@@ -65,7 +65,7 @@ Only bounded excerpts are supplied, not ebooks or the full library.
 
 Local chat uses an existing [Ollama](https://ollama.com/) server on this Mac at
 `127.0.0.1:11434`. Install Ollama and download a model separately, then enter that
-model's name in Studio settings. The default name is `llama3.2:3b`; Shelf does not
+model's name in Studio settings. The default name is `llama3.2:3b`; read. does not
 auto-download or start it. Loopback requests stay on the Mac and do not use a
 remote HTTP proxy.
 
@@ -97,7 +97,7 @@ Choose filters in Highlights, then **Preview current view for Notion**. Review t
 highlight count and example passages, confirm the export, and explicitly submit.
 The export sends passages, personal notes, tags, and book/source metadata. It
 creates new snapshot pages under the selected parent; it does not overwrite your
-existing pages or change Shelf's library. This is a direct internal-integration
+existing pages or change read.'s library. This is a direct internal-integration
 API connection, not an OAuth account-linking flow or continuous bidirectional sync.
 
 Up to 500 highlights can be exported per view. Blocks and rich text are split into
@@ -111,7 +111,7 @@ exposing remote error bodies.
 
 ## Credentials, storage, and backup
 
-Notion and OpenAI keys use Shelf's existing owner-only local credential file. They
+Notion and OpenAI keys use read.'s existing owner-only local credential file. They
 are never stored in browser localStorage, the annotation database, command-line
 arguments, exports, or backups. Verification contacts only the chosen service's
 identity/model endpoint; it does not send highlights or audio. Disconnect removes
