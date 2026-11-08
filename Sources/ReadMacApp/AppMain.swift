@@ -2101,7 +2101,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         metadata=metadata.filter { ["title","authors","filename","language"].contains($0.key) }
         let payload:[String:Any]=[
             "progress":String(format:"%.6f",percent),"percentage":percent,
-            "device":"Shelf","device_id":"shelf-macos","metadata":metadata,"timestamp":Int(body["timestamp"] as? Double ?? Date().timeIntervalSince1970)
+            "device":"read.","device_id":"shelf-macos","metadata":metadata,"timestamp":Int(body["timestamp"] as? Double ?? Date().timeIntervalSince1970)
         ]
         let group=DispatchGroup(),lock=NSLock(); var results=[String:[Bool]]()
         for (name,root) in [("KOReader Sync",service("kosyncHealth", fallback: "http://127.0.0.1:17200/healthcheck").replacingOccurrences(of: "/healthcheck", with: "")),("CrossPoint Sync",service("crosspointApi", fallback: "http://127.0.0.1:17303"))] {
@@ -2846,7 +2846,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func exportDiagnostics(_ additionalText:String) {
         let panel=NSSavePanel()
-        panel.title="Export Shelf diagnostics"
+        panel.title="Export read. diagnostics"
         panel.message="Creates a local ZIP of redacted logs, errors, service state, launch settings, and scripts. Nothing is uploaded."
         panel.directoryURL=URL(fileURLWithPath:"\(home)/Downloads",isDirectory:true)
         panel.nameFieldStringValue="Calibre-Stack-Diagnostics-\(ISO8601DateFormatter().string(from:Date()).replacingOccurrences(of:":",with:"-")).zip"
@@ -2898,7 +2898,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
                     DispatchQueue.main.async { self.send("logsCopied",["ok":false,"message":"No recent log files were found. Your clipboard was left unchanged."]) }
                     return
                 }
-                let heading="Shelf logs and errors · \(DateFormatter.localizedString(from:Date(),dateStyle:.medium,timeStyle:.medium)) · \(TimeZone.current.identifier)\nRecent log excerpts from the last 48 hours, limited to 512 KB. Recovered error sidecars are omitted. Credentials and tokens are redacted.\n"
+                let heading="read. logs and errors · \(DateFormatter.localizedString(from:Date(),dateStyle:.medium,timeStyle:.medium)) · \(TimeZone.current.identifier)\nRecent log excerpts from the last 48 hours, limited to 512 KB. Recovered error sidecars are omitted. Credentials and tokens are redacted.\n"
                 let output=heading+sections.joined(separator:"\n\n"),bytes=output.utf8.count
                 DispatchQueue.main.async {
                     let pasteboard=NSPasteboard.general
@@ -2950,7 +2950,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let stateData=try JSONSerialization.data(withJSONObject:state,options:[.prettyPrinted,.sortedKeys])
         try stateData.write(to:root.appendingPathComponent("dashboard-state.json"),options:.atomic)
         let environment="""
-        Shelf diagnostic export
+        read. diagnostic export
         Created: \(DateFormatter.localizedString(from:Date(),dateStyle:.medium,timeStyle:.medium)) (\(TimeZone.current.identifier))
         macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)
         Architecture: \(Self.run("/usr/bin/uname",["-m"]).output.trimmingCharacters(in:.whitespacesAndNewlines))
@@ -3128,7 +3128,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             return "\(line[dRange].trimmingCharacters(in:.whitespacesAndNewlines)) saved reading progress · \(Int((min(1,max(0,p))*100).rounded()))% complete"
         }
         if line.localizedCaseInsensitiveContains("BACKUP END") { return "Library backup finished successfully." }
-        if line.localizedCaseInsensitiveContains("ambiguous column name: book") { return "Shelf could not read Calibre metadata. A database-query error occurred; check that Shelf has the latest update." }
+        if line.localizedCaseInsensitiveContains("ambiguous column name: book") { return "read. could not read Calibre metadata. A database-query error occurred; check that read. has the latest update." }
         if let docs=Self.capture(#"\bdocuments=(\d+)"#,line),let matched=Self.capture(#"\bmatched=(\d+)"#,line),line.localizedCaseInsensitiveContains("BRIDGE END") {
             return "Reader sync finished · matched \(matched) of \(docs) progress records to Calibre."
         }
