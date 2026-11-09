@@ -1,3 +1,11 @@
+## 0.3.3
+- Import EPUBs through installed Calibre when no custom importer exists; clearly explain missing dependencies and retain originals on failure.
+- Monitor only configured or installed services instead of reporting missing optional jobs as errors on a new Mac.
+- Allow first-time users to start local article reading and highlights without Calibre or any accounts; optional connections start unselected.
+- Read KOReader progress by Calibre column labels, rather than machine-specific numeric column IDs; support libraries without sync columns.
+- Show an empty bookshelf when no library is connected, while keeping genuine database errors visible.
+- Correct installation/configuration documentation and exclude obsolete local Xcode workspaces from release inputs.
+
 ## 0.3.2
 - Ignore delayed messages from a previous reader after switching documents, protecting the active book or article position.
 - Let the floating reader controls fade smoothly during reading, with native clear Liquid Glass on macOS 26 and a material fallback on earlier systems; respect Reduce Motion and VoiceOver.

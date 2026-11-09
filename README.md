@@ -45,7 +45,7 @@ brew trust --cask somamill/read/read
 brew install --cask somamill/read/read
 ```
 
-The first launch checks common Calibre library locations and prepares an incoming-books folder. If your library is elsewhere, choose its folder once; optional sync services can be connected later.
+Start reading articles and saving highlights without an account or Calibre installation. First launch also detects common Calibre library locations; connect your own library and optional services whenever you want. No accounts, server credentials, or personal library are included.
 
 ### Automatic updates
 
@@ -74,7 +74,7 @@ Apple Books support reads the locally synced Books database on this Mac and repo
 
 ## Privacy and data safety
 
-- read. reads Calibre metadata and cover files locally. User passwords and API keys are kept in owner-only files under `~/Library/Application Support/read.`.
+- read. reads Calibre metadata and cover files locally. User passwords and API keys are kept in owner-only files under `~/Library/Application Support/Shelf`.
 - Apple Books data is read locally. The catalog importer creates metadata-only Calibre entries and does not copy protected book content.
 - read. does not upload your library to a read.-operated cloud service. Connected services receive only the data needed for the enabled sync feature.
 - Review diagnostic exports before sharing. Never commit credentials, private library databases, or personal logs.
