@@ -176,6 +176,21 @@ class ArticleTests(unittest.TestCase):
         with patch.object(articles.urllib.request,'build_opener',side_effect=AssertionError('offline')):
             self.assertEqual(self.lib.cache_images(identifier)['images'],result['images'])
 
+    def test_discovery_is_local_ranked_and_excludes_existing_subscriptions(self):
+        self.lib.db.execute('INSERT INTO feeds VALUES(?,?,?,?)',('https://www.quantamagazine.org/feed/','Quanta Magazine',0,''));self.lib.db.commit()
+        with patch.object(articles,'fetch',side_effect=AssertionError('discovery must not contact a remote profiler')):
+            rows=self.lib.dispatch({'action':'discover'})['suggestions']
+        self.assertTrue(rows);self.assertNotIn('Quanta Magazine',[x['title'] for x in rows])
+        self.assertGreater(rows[0]['score'],0);self.assertIn('Quanta Magazine',rows[0]['reason'])
+
+    def test_adjacent_articles_stay_in_the_same_feed_and_exclude_trash(self):
+        first=self.save(url='https://example.org/one',feed='https://example.org/feed')
+        other=self.save(url='https://example.org/other',feed='https://different.org/feed')
+        last=self.save(url='https://example.org/two',feed='https://example.org/feed')
+        self.assertEqual(self.lib.dispatch({'action':'neighbor','id':last,'direction':1})['id'],first)
+        self.lib.dispatch({'action':'update','id':first,'status':'trash'})
+        self.assertIsNone(self.lib.dispatch({'action':'neighbor','id':last,'direction':1})['id'])
+
     def test_invalid_progress_and_unsupported_feed_do_not_erase_library(self):
         self.save()
         with self.assertRaises(ValueError):self.lib.dispatch({'action':'progress','id':1,'percentage':float('nan')})

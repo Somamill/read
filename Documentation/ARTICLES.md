@@ -45,3 +45,11 @@ The project is read. and the app is `read.app`. The existing `app.shelf.dashboar
 ## Highlighting and daily review
 
 Select text to reveal Highlight and Apple Notes actions, or press H to save the selection. Apple Notes uses the macOS sharing composer so you choose where to save; read. does not request access to your Notes database. Exported passages include a link back to the local highlight. Daily review includes book and article passages when both are due. In-progress articles also appear alongside books in Continue reading. Trackpad scrolling pans pages smoothly and settles on a page; wide windows show two or three reading columns.
+
+## Reading layouts and discovery
+
+Reading appearance offers automatic pages, one page, two pages, and continuous scrolling. The layout is remembered and switching preserves approximate progress. Articles hide chapter navigation; PDFs retain their page sections and EPUBs their contents. Previous/next article buttons move within the same feed and skip Trash.
+
+The bottom controls fade after inactivity and return with pointer or keyboard interaction. Native clear Liquid Glass is used on macOS 26; older macOS uses a translucent AppKit material. Reduce Motion and VoiceOver preferences are respected.
+
+Explore feeds ranks a curated publisher catalog using your existing subscriptions and article titles/tags, entirely on this Mac. Suggestions explain their relationship to followed sources. Subscribe explicitly to a suggestion or paste another RSS address. Article illustrations load when cards come into view; converted PDFs use a first-page preview and documents without an image have a typography thumbnail.

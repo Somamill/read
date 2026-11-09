@@ -49,6 +49,19 @@ class PublisherLinks(HTMLParser):
         if tag=='a' and self.current is not None:self.links.append(self.current);self.current=None
 
 
+FEED_CATALOG = [
+    ('Weekly Wisereads','https://wise.readwise.io/feed/','reading books philosophy technology essays'),
+    ('Experimental History','https://www.experimental-history.com/feed','psychology science thinking research essays'),
+    ('Aeon','https://aeon.co/feed.rss','philosophy psychology culture history essays'),
+    ('The Marginalian','https://www.themarginalian.org/feed/','books poetry philosophy art reading'),
+    ('Longreads','https://longreads.com/feed/','essays culture history writing journalism'),
+    ('Quanta Magazine','https://www.quantamagazine.org/feed/','science mathematics physics research'),
+    ('MIT News · Research','https://news.mit.edu/rss/research','science technology research artificial intelligence'),
+    ('Public Domain Review','https://publicdomainreview.org/rss.xml','history art books literature culture'),
+    ('The Conversation · Science','https://theconversation.com/global/technology/articles.atom','science technology research psychology'),
+    ('Nautilus','https://nautil.us/feed/','science philosophy psychology nature'),
+]
+
 def public_book_url(title):
     """Find an exact title on the public publisher named by Wisereads."""
     normalize=lambda text:re.sub(r'[^\w]','',text.casefold())
@@ -184,7 +197,7 @@ class Library:
         (self.root / 'articles.sqlite').chmod(0o600)
 
     def list(self):
-        return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
+        return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath,CASE WHEN content LIKE '%data-read-image=%' THEN 1 ELSE 0 END AS hasImages FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
                 'feeds': [dict(x) for x in self.db.execute('SELECT * FROM feeds ORDER BY title')]}
 
     def save(self, item):
@@ -206,6 +219,9 @@ class Library:
         identifier=self.db.execute('SELECT id FROM articles WHERE url=?', (url,)).fetchone()[0]
         if item.get('documentType') in ('article','pdf','epub'):
             self.db.execute('UPDATE articles SET document_type=? WHERE id=?',(item['documentType'],identifier))
+        preview=Path(str(item.get('previewPath','')))
+        if preview.is_file() and preview.resolve().parent==(self.root/'files').resolve() and preview.suffix=='.jpg':
+            self.db.execute('INSERT OR REPLACE INTO images VALUES(?,?,?)',(identifier,'preview:pdf',str(preview)))
         if item.get('published'):
             self.db.execute('UPDATE articles SET published=? WHERE id=?',(float(item['published']),identifier))
         self.db.execute('INSERT OR REPLACE INTO article_aliases(url,article) VALUES(?,?)',(fetched_url,identifier));self.db.commit()
@@ -363,6 +379,10 @@ class Library:
                 existing=self.db.execute('SELECT id FROM articles WHERE url=? OR id=(SELECT article FROM article_aliases WHERE url=?)',(link,link)).fetchone()
                 if existing:
                     if published:self.db.execute('UPDATE articles SET published=? WHERE id=?',(published,existing[0]))
+                    preview=value(node,('encoded','content')) or value(node,('description','summary'))
+                    if preview:
+                        cleaned,plain=clean_content(preview)
+                        self.db.execute('UPDATE articles SET content=?,text=? WHERE id=? AND fetched=0',(cleaned,plain,existing[0]))
                     self.db.execute('INSERT OR IGNORE INTO feed_seen VALUES(?,?)',(url,link));continue
                 seen=self.db.execute('SELECT 1 FROM feed_seen WHERE feed=? AND url=?',(url,link)).fetchone()
                 self.db.execute('INSERT OR IGNORE INTO feed_seen VALUES(?,?)',(url,link))
@@ -377,8 +397,32 @@ class Library:
             if not row:raise ValueError('Could not subscribe: '+str(error)[:180])
             self.db.execute('UPDATE feeds SET checked=?,error=? WHERE url=?',(time.time(),str(error)[:200],url));self.db.commit()
 
+    def discover(self):
+        feeds=[dict(x) for x in self.db.execute('SELECT url,title FROM feeds')]
+        followed={x['url'].rstrip('/') for x in feeds}
+        signals=' '.join(x['title'] for x in feeds)+' '+' '.join(x['title']+' '+x['tags'] for x in self.db.execute("SELECT title,tags FROM articles WHERE status!='trash' ORDER BY favorite DESC,opened DESC LIMIT 100"))
+        terms=re.findall(r'[^\W_]{4,}',signals.casefold())
+        ranked=[]
+        for title,url,topics in FEED_CATALOG:
+            if url.rstrip('/') in followed:continue
+            interests=set(topics.split());overlap={x for x in terms if x in interests}
+            # Reading activity weighs more than a generic catalog order. No remote profiling.
+            score=sum(min(4,terms.count(x)) for x in overlap)
+            related=[]
+            for f in feeds:
+                known=next((set(t.split()) for _,u,t in FEED_CATALOG if u.rstrip('/')==f['url'].rstrip('/')),set())
+                shared=interests&known
+                if shared:score+=len(shared)*2;related.append((len(shared),f['title']))
+            reason=('Related to '+max(related)[1]) if related else ('Matches your reading: '+', '.join(sorted(overlap)[:3]) if overlap else 'Explore '+', '.join(topics.split()[:3]))
+            ranked.append({'title':title,'url':url,'topics':topics,'reason':reason,'score':score})
+        return {'ok':True,'suggestions':sorted(ranked,key=lambda x:(-x['score'],x['title']))[:6]}
+
     def dispatch(self, p):
         action = p.get('action','list')
+        if action=='discover':return self.discover()
+        if action=='neighbor':
+            current=self.article(p['id']);rows=[x for x in self.list()['items'] if x['status']!='trash' and x['document_type']=='article' and (not current['feed'] or x['feed']==current['feed'])];index=next((i for i,x in enumerate(rows) if x['id']==current['id']),-1);target=index+(-1 if int(p.get('direction',1))<0 else 1)
+            return {'ok':True,'id':rows[target]['id'] if index>=0 and 0<=target<len(rows) else None}
         if action=='search':
             query=str(p.get('query','')).strip()[:300]
             return {'ok':True,'matches':[r[0] for r in self.db.execute('SELECT id FROM articles WHERE instr(lower(text),lower(?))>0 OR instr(lower(title),lower(?))>0 OR instr(lower(tags),lower(?))>0',(query,query,query))]}
