@@ -1,4 +1,5 @@
 ## 0.3.3
+- Keep local article positions out of the book sync retry queue and hide known article IDs from unmatched-book warnings without deleting server records.
 - Import EPUBs through installed Calibre when no custom importer exists; clearly explain missing dependencies and retain originals on failure.
 - Monitor only configured or installed services instead of reporting missing optional jobs as errors on a new Mac.
 - Allow first-time users to start local article reading and highlights without Calibre or any accounts; optional connections start unselected.

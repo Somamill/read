@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read the Calibre library's local reading-progress fields without writing to it."""
 
+import hashlib
 import json
 import math
 import sqlite3
@@ -22,6 +23,15 @@ def finished_overrides():
         return {int(value) for value in values if str(value).isdigit()}
     except (OSError, ValueError, TypeError):
         return set()
+
+
+def local_article_documents():
+    database=UNMATCHED_FILE.parent/'articles'/'articles.sqlite'
+    if not database.is_file():return set()
+    try:
+        with sqlite3.connect(database.as_uri()+'?mode=ro',uri=True,timeout=2) as connection:
+            return {hashlib.md5(url.encode()).hexdigest() for (url,) in connection.execute('SELECT url FROM articles')}
+    except sqlite3.Error:return set()
 
 
 def main():
@@ -166,6 +176,9 @@ def main():
         unmatched = []
         review_matches = []
 
+    article_documents=local_article_documents()
+    unmatched=[x for x in unmatched if x.get('document') not in article_documents]
+    review_matches=[x for x in review_matches if x.get('document') not in article_documents]
     print(json.dumps({
         'total': total,
         'reading': sorted(reading, key=lambda b: b['progress'] or 0, reverse=True),

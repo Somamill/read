@@ -24,3 +24,10 @@ class PortableBookshelfTests(unittest.TestCase):
   self.create_library(True);r=self.run_helper();self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(json.loads(r.stdout)['reading'][0]['progress'],.42)
  def test_corrupt_database_is_not_reported_as_empty(self):
   (self.lib/'metadata.db').write_bytes(b'broken');self.assertNotEqual(self.run_helper().returncode,0)
+
+ def test_article_records_are_not_presented_as_unmatched_books(self):
+  import hashlib
+  self.create_library();state=self.root/'state';(state/'articles').mkdir(parents=True);url='https://example.org/essay';document=hashlib.md5(url.encode()).hexdigest()
+  with sqlite3.connect(state/'articles/articles.sqlite') as c:c.execute('CREATE TABLE articles(url)');c.execute('INSERT INTO articles VALUES(?)',(url,))
+  (state/'kosync-calibre-unmatched.json').write_text(json.dumps({'items':[{'document':document},{'document':'unknown-book'}],'review':[]}))
+  r=self.run_helper();self.assertEqual(r.returncode,0,r.stderr);self.assertEqual(json.loads(r.stdout)['unmatchedProgress'],[{'document':'unknown-book'}])

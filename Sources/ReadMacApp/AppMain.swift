@@ -1593,7 +1593,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func updateReaderPosition(_ info:[String:Any]) {
         let percentage=min(1,max(0,(info["percentage"] as? NSNumber)?.doubleValue ?? 0))
-        if info["userNavigated"] as? Bool == true,let reader=activeReader,let document=reader["document"] as? String,
+        if info["userNavigated"] as? Bool == true,let reader=activeReader,reader["kind"] as? String != "article",let document=reader["document"] as? String,
            lastLocalReaderPosition?.document != document || lastLocalReaderPosition?.percentage != percentage {
             var position:[String:Any]=["type":"progress","bookId":reader["bookId"] ?? 0,"document":document,"syncDocuments":reader["syncDocuments"] ?? [document],"percentage":percentage]
             position["metadata"]=["title":reader["title"] ?? "","authors":reader["authors"] ?? "","filename":reader["filename"] ?? "","language":reader["language"] ?? ""]
@@ -2237,7 +2237,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     }
 
     private func retryPendingReaderProgress() {
-        for record in readerProgressStore.pending().prefix(8) { syncReaderProgress(record) }
+        for record in readerProgressStore.pending().prefix(8) {
+            if (record["bookId"] as? Int ?? 0)<=0 {if let document=record["document"] as? String,let timestamp=record["timestamp"] as? Double{try? readerProgressStore.acknowledge(document:document,timestamp:timestamp)};continue}
+            syncReaderProgress(record)
+        }
     }
 
     private func syncReaderProgress(_ incoming:[String:Any]) {
