@@ -10,6 +10,11 @@ import socket
 import sqlite3
 import sys
 import time
+import tempfile
+import zipfile
+import concurrent.futures
+from email.utils import parsedate_to_datetime
+from datetime import datetime
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -17,14 +22,60 @@ import xml.etree.ElementTree as ET
 MAX_BYTES = 4 * 1024 * 1024
 
 
-def public_url(value):
+def reading_url(value, check_network=True):
+    """Unwrap save links without visiting a third-party reader or login page."""
+    for _ in range(8):
+        p=urllib.parse.urlsplit(str(value).strip())
+        if p.hostname not in ('wise.readwise.io','readwise.io','www.readwise.io','read.readwise.io') or p.path.rstrip('/')!='/save':
+            return public_url(value,check_network)
+        target=urllib.parse.parse_qs(p.query).get('url',[''])[0]
+        if not target: raise ValueError('This Readwise link has no original article URL.')
+        value=target
+    raise ValueError('Too many nested reader links.')
+
+
+class PublisherLinks(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True);self.links=[];self.current=None;self.refresh=None
+    def handle_starttag(self,tag,attrs):
+        attrs=dict(attrs)
+        if tag=='a':self.current=[attrs.get('href',''),'']
+        if tag=='meta' and attrs.get('http-equiv','').casefold()=='refresh':
+            match=re.fullmatch(r'\s*[0-5](?:\.\d+)?\s*;\s*url=(.+)',attrs.get('content',''),re.I)
+            if match:self.refresh=match.group(1).strip().strip('\"\'')
+    def handle_data(self,data):
+        if self.current is not None:self.current[1]+=data
+    def handle_endtag(self,tag):
+        if tag=='a' and self.current is not None:self.links.append(self.current);self.current=None
+
+
+def public_book_url(title):
+    """Find an exact title on the public publisher named by Wisereads."""
+    normalize=lambda text:re.sub(r'[^\w]','',text.casefold())
+    if not title or len(title)>250 or len(normalize(title))<6:
+        raise ValueError('This Readwise-only book link has no public source title. Use the publisher link in the newsletter.')
+    base='https://standardebooks.org'
+    _,page=fetch(base+'/ebooks?'+urllib.parse.urlencode({'query':title}))
+    parser=PublisherLinks();parser.feed(page)
+    candidates={urllib.parse.urljoin(base,href) for href,label in parser.links
+                if href.startswith('/ebooks/') and normalize(label)==normalize(title)}
+    if len(candidates)!=1:
+        raise ValueError('A unique public edition could not be identified. Open the publisher link rather than the Readwise-only link.')
+    _,page=fetch(candidates.pop());parser=PublisherLinks();parser.feed(page)
+    epubs=[urllib.parse.urljoin(base,href) for href,_ in parser.links
+           if urllib.parse.urlsplit(href).path.endswith('.epub') and '.kepub.' not in href and '_advanced.' not in href]
+    if not epubs:raise ValueError('The publisher did not provide a direct EPUB download.')
+    return public_url(epubs[0])
+
+
+def public_url(value, check_network=True):
     value = str(value).strip()
     p = urllib.parse.urlsplit(value)
     if p.scheme not in ('http', 'https') or not p.hostname or p.username or p.password:
         raise ValueError('Use a public http or https article or feed URL.')
     if p.port and p.port not in (80, 443):
         raise ValueError('Article URLs must use a standard web port.')
-    for record in socket.getaddrinfo(p.hostname, p.port or (443 if p.scheme == 'https' else 80), type=socket.SOCK_STREAM):
+    for record in (socket.getaddrinfo(p.hostname, p.port or (443 if p.scheme == 'https' else 80), type=socket.SOCK_STREAM) if check_network else []):
         if not ipaddress.ip_address(record[4][0]).is_global:
             raise ValueError('Local and private network addresses cannot be saved as articles.')
     # Tracking fragments and common campaign parameters do not identify editions.
@@ -55,7 +106,7 @@ def fetch(url):
 
 class SafeArticle(HTMLParser):
     """Independent allowlist after Readability/DOMPurify; offline text by default."""
-    tags = set('p div section article h1 h2 h3 h4 h5 h6 blockquote pre code ul ol li strong b em i u s a br hr sup sub table thead tbody tr th td figure figcaption dl dt dd mark'.split())
+    tags = set('p div section article h1 h2 h3 h4 h5 h6 blockquote pre code ul ol li strong b em i u s a br hr sup sub table thead tbody tr th td figure figcaption dl dt dd mark img'.split())
     blocked = set('script style iframe object embed form button input select textarea svg math head'.split())
 
     def __init__(self):
@@ -69,6 +120,14 @@ class SafeArticle(HTMLParser):
         if self.skip: return
         if tag not in self.tags: return
         attrs = dict(attrs); extra = ''
+        if tag=='img':
+            source=attrs.get('src') or attrs.get('data-read-image') or ''
+            if urllib.parse.urlsplit(source).scheme not in ('http','https'):return
+            for dimension in ('width','height'):
+                if attrs.get(dimension,'').isdigit() and int(attrs[dimension])<=3:return
+            if re.search(r'(?i)(?:tracking|beacon|spacer|(?:^|/)pixel(?:[.?/]|$))',source):return
+            self.parts.append('<img data-read-image="'+html.escape(source,quote=True)+'" alt="'+html.escape(attrs.get('alt','')[:500],quote=True)+'">')
+            return
         if attrs.get('id'): extra += ' id="' + html.escape(attrs['id'][:200],quote=True) + '"'
         if tag == 'a':
             url = attrs.get('href', '')
@@ -81,7 +140,7 @@ class SafeArticle(HTMLParser):
         if tag in self.blocked:
             self.skip = max(0, self.skip - 1)
             return
-        if not self.skip and tag in self.tags and tag not in ('br', 'hr'):
+        if not self.skip and tag in self.tags and tag not in ('br', 'hr','img'):
             self.parts.append('</' + tag + '>')
 
     def handle_data(self, data):
@@ -112,13 +171,20 @@ class Library:
             progress REAL DEFAULT 0, status TEXT DEFAULT 'inbox', tags TEXT DEFAULT '',
             favorite INTEGER DEFAULT 0, feed TEXT DEFAULT '', fetched INTEGER DEFAULT 1);
           CREATE TABLE IF NOT EXISTS article_aliases (url TEXT PRIMARY KEY,article INTEGER NOT NULL);
+          CREATE TABLE IF NOT EXISTS file_readers (article INTEGER PRIMARY KEY,html TEXT NOT NULL,directory TEXT NOT NULL,chapters TEXT NOT NULL);
+          CREATE TABLE IF NOT EXISTS images (article INTEGER,url TEXT,path TEXT,PRIMARY KEY(article,url));
+          CREATE TABLE IF NOT EXISTS feed_seen (feed TEXT,url TEXT,PRIMARY KEY(feed,url));
           CREATE TABLE IF NOT EXISTS feeds (url TEXT PRIMARY KEY,title TEXT NOT NULL,
             checked REAL DEFAULT 0,error TEXT DEFAULT '');
         ''')
+        columns={row[1] for row in self.db.execute('PRAGMA table_info(articles)')}
+        for name,definition in [('published','REAL DEFAULT 0'),('document_type',"TEXT DEFAULT 'article'")]:
+            if name not in columns:self.db.execute('ALTER TABLE articles ADD COLUMN '+name+' '+definition)
+        self.db.commit()
         (self.root / 'articles.sqlite').chmod(0o600)
 
     def list(self):
-        return {'ok': True, 'items': [dict(x) for x in self.db.execute('SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,length(text) AS characters FROM articles ORDER BY saved DESC LIMIT 2000')],
+        return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
                 'feeds': [dict(x) for x in self.db.execute('SELECT * FROM feeds ORDER BY title')]}
 
     def save(self, item):
@@ -138,55 +204,178 @@ class Library:
           (url,title,str(item.get('author',''))[:300],urllib.parse.urlsplit(url).hostname,content,text,text[:300],str(item.get('language',''))[:30],time.time(),time.time(),str(item.get('feed','')),int(item.get('fetched',1))))
         self.db.commit()
         identifier=self.db.execute('SELECT id FROM articles WHERE url=?', (url,)).fetchone()[0]
+        if item.get('documentType') in ('article','pdf','epub'):
+            self.db.execute('UPDATE articles SET document_type=? WHERE id=?',(item['documentType'],identifier))
+        if item.get('published'):
+            self.db.execute('UPDATE articles SET published=? WHERE id=?',(float(item['published']),identifier))
         self.db.execute('INSERT OR REPLACE INTO article_aliases(url,article) VALUES(?,?)',(fetched_url,identifier));self.db.commit()
         return identifier
+
+    def cache_images(self, identifier):
+        item=self.article(identifier)
+        sources=list(dict.fromkeys(html.unescape(x) for x in re.findall(r'data-read-image="([^"]+)"',item['content'])))[:8]
+        directory=self.root/'reader'/str(item['id'])/'images';directory.mkdir(parents=True,exist_ok=True)
+        existing={r['url']:r['path'] for r in self.db.execute('SELECT url,path FROM images WHERE article=?',(item['id'],))}
+        def download(source):
+            if source in existing and Path(existing[source]).is_file():return source,existing[source]
+            try:
+                request=urllib.request.Request(public_url(source),headers={'User-Agent':'read./0.3'})
+                with urllib.request.build_opener(PublicRedirect).open(request,timeout=7) as response:
+                    suffix={'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/gif':'.gif','image/avif':'.avif'}.get(response.headers.get_content_type())
+                    if not suffix:return None
+                    data=response.read(2*1024*1024+1)
+                    if not data or len(data)>2*1024*1024:return None
+                path=directory/(hashlib.sha256(source.encode()).hexdigest()+suffix);path.write_bytes(data);path.chmod(0o600)
+                return source,str(path)
+            except (OSError,ValueError):return None
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as workers:
+            for result in workers.map(download,sources):
+                if result:self.db.execute('INSERT OR REPLACE INTO images VALUES(?,?,?)',(item['id'],*result))
+        self.db.commit()
+        images={r['url']:'images/'+Path(r['path']).name for r in self.db.execute('SELECT url,path FROM images WHERE article=?',(item['id'],)) if Path(r['path']).is_file()}
+        return {'ok':True,'articleId':item['id'],'images':images}
 
     def article(self, identifier):
         row = self.db.execute('SELECT * FROM articles WHERE id=?', (int(identifier),)).fetchone()
         if not row: raise ValueError('This article is no longer available.')
         return dict(row)
 
+    def fetch_link(self, p):
+        url=reading_url(p.get('url',''),False)
+        requested_url=public_url(p.get('_requestedURL') or url,False)
+        if int(p.get('_redirects',0))>3:raise ValueError('The publisher returned too many download pages.')
+        existing=self.db.execute('SELECT id FROM articles WHERE fetched=1 AND (url=? OR id=(SELECT article FROM article_aliases WHERE url=?))',(url,url)).fetchone()
+        if p.get('openAfterSave') and existing:return {**self.list(),'savedId':existing[0],'openAfterSave':True}
+        url=public_url(url)
+        parsed=urllib.parse.urlsplit(url)
+        if parsed.hostname in ('readwise.io','www.readwise.io') and parsed.path.startswith('/reader/fd/'):
+            url=public_book_url(p.get('title',''))
+        elif parsed.hostname=='read.readwise.io' or (parsed.hostname in ('readwise.io','www.readwise.io') and not parsed.path.startswith('/reader/fd/')):
+            raise ValueError('This is a private Readwise library link. Use the original article or file URL to read it here.')
+        existing=self.db.execute('SELECT id FROM articles WHERE url=? AND fetched=1',(url,)).fetchone()
+        if p.get('openAfterSave') and existing:
+            return {**self.list(),'savedId':existing[0],'openAfterSave':True}
+        opener=urllib.request.build_opener(PublicRedirect)
+        request=urllib.request.Request(url,headers={'User-Agent':'read./0.3','Accept':'text/html,application/xhtml+xml,application/pdf,application/epub+zip,application/rss+xml,application/atom+xml,application/xml'})
+        try:response=opener.open(request,timeout=20)
+        except urllib.error.HTTPError as error:
+            if error.code==404 and urllib.parse.urlsplit(url).path.endswith('.html/'):
+                retry=dict(p);retry['url']=url.rstrip('/');return self.fetch_link(retry)
+            raise
+        with response:
+            final=public_url(response.url);mime=response.headers.get_content_type()
+            data=response.read(32*1024*1024+1)
+            if len(data)>32*1024*1024:raise ValueError('This linked file exceeds the 32 MB reading limit.')
+            if mime in ('application/rss+xml','application/atom+xml','application/xml','text/xml') or data.lstrip().startswith(b'<?xml'):
+                try:feed_root=ET.fromstring(data)
+                except ET.ParseError:feed_root=None
+                if feed_root is not None and feed_root.tag.rsplit('}',1)[-1] in ('rss','feed','RDF'):
+                    self.refresh_feed(final)
+                    return {**self.list(),'subscribedFeedURL':final}
+
+            if mime=='application/pdf' or data.startswith(b'%PDF-'):
+                if not data.startswith(b'%PDF-'):raise ValueError('The link did not return a valid PDF.')
+                kind='pdf'
+            elif mime=='application/epub+zip' or (urllib.parse.urlsplit(final).path.endswith('.epub') and data.startswith(b'PK')):kind='epub'
+            else:
+                if mime not in ('text/html','application/xhtml+xml','text/plain'):raise ValueError('This link is not an article, PDF, or EPUB.')
+                if len(data)>MAX_BYTES:raise ValueError('This article exceeds the 4 MB text limit.')
+                if urllib.parse.urlsplit(final).path.endswith('.epub'):
+                    page=PublisherLinks();page.feed(data.decode('utf-8',errors='replace'))
+                    target=urllib.parse.urljoin(final,page.refresh or '')
+                    original=urllib.parse.urlsplit(final);destination=urllib.parse.urlsplit(target)
+                    if page.refresh and original.hostname=='standardebooks.org' and destination.hostname==original.hostname and destination.path==original.path and target!=final:
+                        retry=dict(p);retry.update(url=public_url(target),_requestedURL=requested_url,_redirects=int(p.get('_redirects',0))+1)
+                        return self.fetch_link(retry)
+                    raise ValueError('The publisher returned a download page rather than an EPUB file.')
+                return {'ok':True,'url':final,'html':data.decode(response.headers.get_content_charset() or 'utf-8',errors='replace'),
+                        'articleId':p.get('articleId'),'openAfterSave':bool(p.get('openAfterSave'))}
+        digest=hashlib.sha256(data).hexdigest();files=self.root/'files';files.mkdir(exist_ok=True)
+        path=files/(digest+'.'+kind);path.write_bytes(data);path.chmod(0o600)
+        if kind=='pdf':return {'ok':True,'fileType':kind,'filePath':str(path),'url':final,'title':p.get('title') or 'PDF document','openAfterSave':True}
+        from epub_native import prepare_epub,local
+        native=files/digest
+        if not native.exists():prepare_epub(path,native)
+        native_html=native/'content/index.html'
+        with zipfile.ZipFile(path) as bundle:
+            container=ET.fromstring(bundle.read('META-INF/container.xml'))
+            opf=next(x.get('full-path') for x in container.iter() if local(x.tag)=='rootfile')
+            metadata=ET.fromstring(bundle.read(opf))
+            title=next((''.join(x.itertext()) for x in metadata.iter() if local(x.tag)=='title'),p.get('title') or 'EPUB')
+            author=' · '.join(''.join(x.itertext()) for x in metadata.iter() if local(x.tag)=='creator')
+            language=next((''.join(x.itertext()) for x in metadata.iter() if local(x.tag)=='language'),'')
+        identifier=self.save({'url':final,'title':title,'author':author,'language':language,'content':native_html.read_text(encoding='utf-8'),'documentType':'epub'})
+        chapters=(native/'chapters.json').read_text(encoding='utf-8')
+        self.db.execute('INSERT OR REPLACE INTO file_readers VALUES(?,?,?,?)',(identifier,str(native_html),str(native),chapters))
+        self.db.execute('INSERT OR REPLACE INTO article_aliases VALUES(?,?)',(requested_url,identifier));self.db.commit()
+        return {**self.list(),'savedId':identifier,'openAfterSave':True}
+
     def open(self, identifier):
         item = self.article(identifier)
         directory = self.root / 'reader' / str(item['id']); directory.mkdir(parents=True, exist_ok=True)
         title = html.escape(item['title']); byline = html.escape(item['author'] or item['site'])
         path = directory / 'index.html'
-        path.write_text('<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'none\'; object-src \'none\'"><title>' + title + '</title></head><body><article><h1>' + title + '</h1><p>' + byline + '</p>' + item['content'] + '</article></body></html>', encoding='utf-8')
+        content=item['content']
+        for row in self.db.execute('SELECT url,path FROM images WHERE article=?',(item['id'],)):
+            if Path(row['path']).is_file():content=content.replace('data-read-image="'+html.escape(row['url'],quote=True)+'"','data-read-image="'+html.escape(row['url'],quote=True)+'" src="images/'+Path(row['path']).name+'"')
+        path.write_text('<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src \'self\' file: data:; style-src \'unsafe-inline\'; script-src \'none\'; object-src \'none\'"><title>' + title + '</title></head><body><article><h1>' + title + '</h1><p>' + byline + '</p>' + content + '</article></body></html>', encoding='utf-8')
         path.chmod(0o600)
         self.db.execute('UPDATE articles SET opened=? WHERE id=?', (time.time(),item['id'])); self.db.commit()
-        return {'ok':True,'articleId':item['id'],'bookId':0,'kind':'article','title':item['title'],
+        result={'ok':True,'articleId':item['id'],'bookId':0,'kind':'article','title':item['title'],
                 'authors':item['author'],'sourceURL':item['url'],'document':hashlib.md5(item['url'].encode()).hexdigest(),
                 'language':item['language'],'htmlPath':str(path),'workDir':str(directory),'persistentCache':True,
-                'resumePercentage':item['progress'],'savedHighlights':[],'articleText':item['text']}
+                'resumePercentage':item['progress'],'savedHighlights':[],'articleText':item['text'],'documentType':item['document_type']}
+        file_reader=self.db.execute('SELECT * FROM file_readers WHERE article=?',(item['id'],)).fetchone()
+        if file_reader and Path(file_reader['html']).is_file():
+            result.update(htmlPath=file_reader['html'],workDir=file_reader['directory'],chapters=json.loads(file_reader['chapters']))
+        return result
 
     def refresh_feed(self, url, force=False):
-        url = public_url(url)
-        row = self.db.execute('SELECT * FROM feeds WHERE url=?', (url,)).fetchone()
-        if row and not force and time.time()-row['checked'] < 900: return
+        url=public_url(url)
+        row=self.db.execute('SELECT * FROM feeds WHERE url=?',(url,)).fetchone()
+        if row and not force and time.time()-row['checked']<900:return
         try:
-            final, data = fetch(url)
-            root = ET.fromstring(data)
-            def tag(node): return node.tag.rsplit('}',1)[-1]
-            def value(node, names):
-                return next((''.join(x.itertext()).strip() for x in node if tag(x) in names), '')
-            if tag(root) not in ('rss','feed','RDF'): raise ValueError('Use the RSS or Atom feed address, rather than its home page.')
-            channel = next((x for x in root if tag(x)=='channel'),root)
-            title = value(channel,('title',)) or urllib.parse.urlsplit(url).hostname
+            final,data=fetch(url);root=ET.fromstring(data)
+            def tag(node):return node.tag.rsplit('}',1)[-1]
+            def value(node,names):return next((''.join(x.itertext()).strip() for x in node if tag(x) in names),'')
+            if tag(root) not in ('rss','feed','RDF'):raise ValueError('Use the RSS or Atom feed address, rather than its home page.')
+            channel=next((x for x in root if tag(x)=='channel'),root)
+            title=value(channel,('title',)) or urllib.parse.urlsplit(url).hostname
+            previous_check=row['checked'] if row else 0
+            seeded=bool(self.db.execute('SELECT 1 FROM feed_seen WHERE feed=? LIMIT 1',(url,)).fetchone())
             self.db.execute('INSERT INTO feeds(url,title,checked,error) VALUES(?,?,?,?) ON CONFLICT(url) DO UPDATE SET title=excluded.title,checked=excluded.checked,error=excluded.error',(url,title,time.time(),''))
-            for node in [x for x in root.iter() if tag(x) in ('item','entry')][:40]:
-                link = value(node,('link',))
-                if not link: link = next((x.get('href','') for x in node if tag(x)=='link' and x.get('rel','alternate')=='alternate'),'')
-                if not link: continue
-                try:
-                    link = public_url(urllib.parse.urljoin(final,link))
-                    if self.db.execute('SELECT 1 FROM articles WHERE url=?',(link,)).fetchone(): continue
-                    content = value(node,('encoded','content')) or value(node,('description','summary'))
-                    self.save({'url':link,'title':value(node,('title',)),'author':value(node,('creator','author')),'content':content,'feed':url,'fetched':0})
-                except (ValueError,OSError): continue
+            entries=[]
+            for node in [x for x in root.iter() if tag(x) in ('item','entry')][:200]:
+                link=value(node,('link',)) or next((x.get('href','') for x in node if tag(x)=='link' and x.get('rel','alternate')=='alternate'),'')
+                if not link:continue
+                try:link=public_url(urllib.parse.urljoin(final,link))
+                except (ValueError,OSError):continue
+                date=value(node,('pubDate','published','updated','date'));published=0
+                if date:
+                    try:published=parsedate_to_datetime(date).timestamp()
+                    except (TypeError,ValueError):
+                        try:published=datetime.fromisoformat(date.replace('Z','+00:00')).timestamp()
+                        except ValueError:pass
+                entries.append((node,link,published))
+            entries.sort(key=lambda item:item[2],reverse=True)
+            allowed={link for _,link,_ in entries[:10]} if not row else {link for _,link,_ in entries}
+            for node,link,published in reversed(entries):
+                existing=self.db.execute('SELECT id FROM articles WHERE url=? OR id=(SELECT article FROM article_aliases WHERE url=?)',(link,link)).fetchone()
+                if existing:
+                    if published:self.db.execute('UPDATE articles SET published=? WHERE id=?',(published,existing[0]))
+                    self.db.execute('INSERT OR IGNORE INTO feed_seen VALUES(?,?)',(url,link));continue
+                seen=self.db.execute('SELECT 1 FROM feed_seen WHERE feed=? AND url=?',(url,link)).fetchone()
+                self.db.execute('INSERT OR IGNORE INTO feed_seen VALUES(?,?)',(url,link))
+                if seen or link not in allowed:continue
+                if row and not seeded and (not published or published<previous_check):continue
+                content=value(node,('encoded','content')) or value(node,('description','summary'))
+                if len(re.sub('<[^>]+>','',content).strip())<40:content='<p>'+html.escape(value(node,('title',)))+'</p><p>Open this story to save the full article from its publisher.</p>'
+                try:self.save({'url':link,'title':value(node,('title',)),'author':value(node,('creator','author')),'content':content,'feed':url,'fetched':0,'published':published})
+                except (ValueError,OSError):continue
             self.db.commit()
         except Exception as error:
-            if not row: raise ValueError('Could not subscribe: '+str(error)[:180])
-            self.db.execute('UPDATE feeds SET checked=?,error=? WHERE url=?',(time.time(),str(error)[:200],url)); self.db.commit()
+            if not row:raise ValueError('Could not subscribe: '+str(error)[:180])
+            self.db.execute('UPDATE feeds SET checked=?,error=? WHERE url=?',(time.time(),str(error)[:200],url));self.db.commit()
 
     def dispatch(self, p):
         action = p.get('action','list')
@@ -194,11 +383,14 @@ class Library:
             query=str(p.get('query','')).strip()[:300]
             return {'ok':True,'matches':[r[0] for r in self.db.execute('SELECT id FROM articles WHERE instr(lower(text),lower(?))>0 OR instr(lower(title),lower(?))>0 OR instr(lower(tags),lower(?))>0',(query,query,query))]}
         if action=='fetch':
-            url, content = fetch(p.get('url',''))
-            return {'ok':True,'url':url,'html':content,'articleId':p.get('articleId')}
+            return self.fetch_link(p)
         if action=='save':
             identifier = self.save(p['item'])
             return {**self.list(),'savedId':identifier,'openAfterSave':bool(p.get('openAfterSave'))}
+        if action=='images':return self.cache_images(p['id'])
+        if action=='cover':
+            row=self.db.execute('SELECT path FROM images WHERE article=? LIMIT 1',(int(p['id']),)).fetchone()
+            return {'ok':True,'path':row['path'] if row else ''}
         if action=='open': return self.open(p['id'])
         if action=='openDocument':
             for row in self.db.execute('SELECT id,url FROM articles'):

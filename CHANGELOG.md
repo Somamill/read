@@ -1,3 +1,17 @@
+## 0.3.1
+- Recognize RSS links as subscriptions, reuse canonical feeds, and start new subscriptions with the latest ten entries.
+- Cache article illustrations for offline reading and show thumbnails in Articles.
+- Add a visible Back action, responsive reading columns, smooth trackpad paging, and selection tools for highlighting and Apple Notes sharing.
+- Improve extraction with structured article text and an isolated rendered publisher fallback; add on-device OCR for scanned PDF pages.
+- Connect in-progress articles with Continue reading and balance daily review across book and article highlights.
+
+- Open links clicked in articles and EPUBs inside read.; prevent target-blank links from navigating the privileged reader to external sites.
+- Unwrap Readwise save links to their original sources without opening Readwise or a login page.
+- Download linked PDFs into private local storage and read selectable PDF text with page navigation and highlighting.
+- Open linked EPUBs with their original spine, resources, and contents; resolve exact-title public Standard Ebooks editions for Readwise-only newsletter book links.
+- Reuse saved linked articles offline, keep link loading visible, and cancel pending navigation when leaving the reader.
+- Keep Open original in browser as a clearly labelled explicit action.
+
 ## 0.3.0 — read.
 
 - Rename the app and GitHub project to read. while preserving existing libraries, credentials, permission identities, and signed update compatibility.

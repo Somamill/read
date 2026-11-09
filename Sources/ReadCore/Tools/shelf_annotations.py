@@ -201,7 +201,13 @@ class Library:
                     and not set(x['tags'])&set(s['excludedTags'])]
         # Stable daily order, favor unseen items without excluding short/Japanese passages.
         candidates.sort(key=lambda x:(x['reviewCount']/x['frequency'],hashlib.sha256((day.date().isoformat()+x['id']).encode()).hexdigest()))
-        return candidates[:s['reviewSize']]
+        selected=[]
+        # Give local book and article passages a place alongside imported highlights.
+        for category in ('book','article'):
+            match=next((x for x in candidates if (x['bookId']>0 if category=='book' else x['source']=='read. articles')),None)
+            if match and len(selected)<s['reviewSize']:selected.append(match)
+        selected.extend(x for x in candidates if x not in selected)
+        return selected[:s['reviewSize']]
 
     def reviewed(self,key,days):
         item=next((x for x in self.items() if x['id']==key),None)

@@ -120,7 +120,7 @@ else
     -Xlinker -rpath -Xlinker '@executable_path/../Resources' \
     -o "$CONTENTS/MacOS/read" "$PROJECT_ROOT"/Sources/ReadMacApp/*.swift
   cp "$PROJECT_ROOT/Resources/Dashboard/index.html" "$PROJECT_ROOT/Resources/Dashboard/style.css" \
-    "$PROJECT_ROOT/Resources/Dashboard/article-extraction.js" "$PROJECT_ROOT/Resources/Dashboard/articles.js" "$PROJECT_ROOT/Resources/Dashboard/articles.css" "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
+    "$PROJECT_ROOT/Resources/Dashboard/article-extraction.js" "$PROJECT_ROOT/Resources/Dashboard/reader-experience.js" "$PROJECT_ROOT/Resources/Dashboard/reader-style.css" "$PROJECT_ROOT/Resources/Dashboard/reader-links.js" "$PROJECT_ROOT/Resources/Dashboard/articles.js" "$PROJECT_ROOT/Resources/Dashboard/articles.css" "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
     "$PROJECT_ROOT/Sources/ReadCore/Tools/"*.py "$PROJECT_ROOT/Config/config.example.json" "$RESOURCES/"
   ditto "$PROJECT_ROOT/Resources/Dashboard/Vendor" "$RESOURCES/Vendor"
   ditto "$PROJECT_ROOT/Resources/PythonRuntime" "$RESOURCES/PythonRuntime"
