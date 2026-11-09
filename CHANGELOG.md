@@ -1,3 +1,10 @@
+## 0.3.2
+- Let the floating reader controls fade smoothly during reading, with native clear Liquid Glass on macOS 26 and a material fallback on earlier systems; respect Reduce Motion and VoiceOver.
+- Choose automatic pages, one page, two pages, or continuous scrolling while retaining reading progress.
+- Simplify articles by hiding chapter controls and adding previous/next article navigation within their source.
+- Make Read the primary article action; lazily load illustrations and generate first-page PDF previews.
+- Discover feeds with local interest ranking and clear explanations, without external profiling or automatic subscriptions.
+
 ## 0.3.1
 - Recognize RSS links as subscriptions, reuse canonical feeds, and start new subscriptions with the latest ten entries.
 - Cache article illustrations for offline reading and show thumbnails in Articles.
