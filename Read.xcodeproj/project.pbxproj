@@ -8,9 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		03FFFC7B52F0B195016A1F43 /* bookshelf.py in Resources */ = {isa = PBXBuildFile; fileRef = 15F236BAE1029B231C14351B /* bookshelf.py */; };
+		0FAA1F0604D51CEA738B8EEF /* reader-style.css in Resources */ = {isa = PBXBuildFile; fileRef = 3D8EB922C75D82D8EB27156E /* reader-style.css */; };
 		121C0D43ECC0090009977461 /* ReaderContentsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CF3444B3105FBF75D54178 /* ReaderContentsController.swift */; };
 		141E27ED3E864C21C64B858E /* PythonRuntime in Resources */ = {isa = PBXBuildFile; fileRef = 3070FBC65E0A7BD02E4D5874 /* PythonRuntime */; };
 		2E7A067775D574C4D5937469 /* read_articles.py in Resources */ = {isa = PBXBuildFile; fileRef = 76AB03E5F3AB31CE18B19A39 /* read_articles.py */; };
+		35002FC68148DEE9C3146396 /* reader-experience.js in Resources */ = {isa = PBXBuildFile; fileRef = 2C9FA43996BC682F3D965CAD /* reader-experience.js */; };
 		37C47E69DC6390923C23DCBB /* style.css in Resources */ = {isa = PBXBuildFile; fileRef = 4EF15F82053C334DEB0EEBE5 /* style.css */; };
 		38231AE25716A211BF8582D0 /* article-extraction.js in Resources */ = {isa = PBXBuildFile; fileRef = A90EA46B65DAAA0B89DF58ED /* article-extraction.js */; };
 		3AE31F362A6AD8FB6C812F3E /* Vendor in Resources */ = {isa = PBXBuildFile; fileRef = A7042600B3DC833EF912A07C /* Vendor */; };
@@ -32,8 +34,10 @@
 		9E9124246F8CB103DA1EA08E /* shelf_annotations.py in Resources */ = {isa = PBXBuildFile; fileRef = B2FC033AFA460A7FF7D42CC7 /* shelf_annotations.py */; };
 		A6AE7C0759C48518A66AB4E8 /* calibre_fts.py in Resources */ = {isa = PBXBuildFile; fileRef = 8C4CBA56F98815A6D681267F /* calibre_fts.py */; };
 		B391BFED5FEE141B2AF4E775 /* KOReader in Resources */ = {isa = PBXBuildFile; fileRef = 0AEA7DC90FEFBCAE5A0A9202 /* KOReader */; };
+		B52D093DA38ADBF008FFF113 /* reader-links.js in Resources */ = {isa = PBXBuildFile; fileRef = BEE0F32731BC8DBBE885931E /* reader-links.js */; };
 		B7B7D4BB6A2B8040A03E50F3 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 235A7134192865D66AC50C0D /* AppMain.swift */; };
 		CAEE075270F525BC55122264 /* boox_rotation.py in Resources */ = {isa = PBXBuildFile; fileRef = 98439284EF005C4C896390D2 /* boox_rotation.py */; };
+		CB924554D725983C6B824248 /* PublisherReaderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6AF36BDF507D0E2167BD10F /* PublisherReaderController.swift */; };
 		E7F249EE1AD3048CF64C656D /* AppIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F3268202555922677D4D42F /* AppIcon.png */; };
 		E8AE1F6F244E949FAFF9047C /* apple_books.py in Resources */ = {isa = PBXBuildFile; fileRef = B55AC482E79AFECEC229B953 /* apple_books.py */; };
 		ECC18B0C87A88963FE3FA749 /* shelf_config.py in Resources */ = {isa = PBXBuildFile; fileRef = 0E6C5D4D3678258A985368A9 /* shelf_config.py */; };
@@ -48,8 +52,10 @@
 		1FB78FB7936D5944C5AD5EFA /* kosync_calibre_bridge.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = kosync_calibre_bridge.py; sourceTree = "<group>"; };
 		235A7134192865D66AC50C0D /* AppMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMain.swift; sourceTree = "<group>"; };
 		28FB9CDCF752D8B3C7C1F2F5 /* boox_settings.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = boox_settings.py; sourceTree = "<group>"; };
+		2C9FA43996BC682F3D965CAD /* reader-experience.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "reader-experience.js"; sourceTree = "<group>"; };
 		3070FBC65E0A7BD02E4D5874 /* PythonRuntime */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PythonRuntime; path = Resources/PythonRuntime; sourceTree = SOURCE_ROOT; };
 		3D4FBFCFA1DB304D039C8516 /* readwise_reader_sync.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = readwise_reader_sync.py; sourceTree = "<group>"; };
+		3D8EB922C75D82D8EB27156E /* reader-style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "reader-style.css"; sourceTree = "<group>"; };
 		3EE92AD10E30EC5435079A8F /* reader_book.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = reader_book.py; sourceTree = "<group>"; };
 		4318B1C2166E41A6F114D7B0 /* Read.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Read.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4EF15F82053C334DEB0EEBE5 /* style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = style.css; sourceTree = "<group>"; };
@@ -71,7 +77,9 @@
 		A90EA46B65DAAA0B89DF58ED /* article-extraction.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "article-extraction.js"; sourceTree = "<group>"; };
 		B2FC033AFA460A7FF7D42CC7 /* shelf_annotations.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = shelf_annotations.py; sourceTree = "<group>"; };
 		B55AC482E79AFECEC229B953 /* apple_books.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = apple_books.py; sourceTree = "<group>"; };
+		BEE0F32731BC8DBBE885931E /* reader-links.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "reader-links.js"; sourceTree = "<group>"; };
 		D067F9ECB79C938D5BD89ABB /* epub_native.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = epub_native.py; sourceTree = "<group>"; };
+		E6AF36BDF507D0E2167BD10F /* PublisherReaderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublisherReaderController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -148,6 +156,9 @@
 				A75D0CECD5AB7D8719BBB6DE /* articles.css */,
 				9F37A76521C1FF02179282B1 /* articles.js */,
 				9ABAAD046DBB9298507952B3 /* index.html */,
+				2C9FA43996BC682F3D965CAD /* reader-experience.js */,
+				BEE0F32731BC8DBBE885931E /* reader-links.js */,
+				3D8EB922C75D82D8EB27156E /* reader-style.css */,
 				4EF15F82053C334DEB0EEBE5 /* style.css */,
 				A7042600B3DC833EF912A07C /* Vendor */,
 			);
@@ -199,6 +210,7 @@
 			isa = PBXGroup;
 			children = (
 				235A7134192865D66AC50C0D /* AppMain.swift */,
+				E6AF36BDF507D0E2167BD10F /* PublisherReaderController.swift */,
 				52CF3444B3105FBF75D54178 /* ReaderContentsController.swift */,
 			);
 			path = ReadMacApp;
@@ -288,6 +300,9 @@
 				562014685E78F5661051E5D5 /* kosync_calibre_bridge.py in Resources */,
 				6C0DFD55EEC69F60C6554388 /* open_library_book.py in Resources */,
 				2E7A067775D574C4D5937469 /* read_articles.py in Resources */,
+				35002FC68148DEE9C3146396 /* reader-experience.js in Resources */,
+				B52D093DA38ADBF008FFF113 /* reader-links.js in Resources */,
+				0FAA1F0604D51CEA738B8EEF /* reader-style.css in Resources */,
 				F0B80CE63AE20BBDBBC5B5D7 /* reader_book.py in Resources */,
 				9804847C51C2F6B1AA2BAB08 /* readwise_reader_sync.py in Resources */,
 				9E9124246F8CB103DA1EA08E /* shelf_annotations.py in Resources */,
@@ -330,6 +345,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B7B7D4BB6A2B8040A03E50F3 /* AppMain.swift in Sources */,
+				CB924554D725983C6B824248 /* PublisherReaderController.swift in Sources */,
 				121C0D43ECC0090009977461 /* ReaderContentsController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -343,7 +359,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 52;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -357,7 +373,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;
@@ -371,7 +387,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 52;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -385,7 +401,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;

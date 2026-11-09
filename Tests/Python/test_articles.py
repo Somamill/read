@@ -4,6 +4,9 @@ from pathlib import Path
 import socket
 import sys
 import tempfile
+import io
+import zipfile
+from email.message import Message
 import unittest
 from unittest.mock import patch
 
@@ -83,10 +86,95 @@ class ArticleTests(unittest.TestCase):
             request=__import__('urllib.request',fromlist=['Request']).Request('https://example.org/')
             with self.assertRaises(ValueError):articles.PublicRedirect().redirect_request(request,None,302,'',{},'http://127.0.0.1/')
 
+    def test_readwise_save_links_unwrap_before_any_login_or_fetch(self):
+        url='https://wise.readwise.io/save?url=https%3A%2F%2Fexample.org%2Fessay%3Futm_source%3Dnewsletter'
+        self.assertEqual(articles.reading_url(url),'https://example.org/essay')
+        with self.assertRaises(ValueError):articles.reading_url('https://wise.readwise.io/save?url=file%3A%2F%2F%2Fetc%2Fpasswd')
+
+    def test_public_edition_lookup_requires_one_exact_title_and_uses_normal_epub(self):
+        results='<a href="/ebooks/writer/book/translator">The Book</a>'
+        page='<a href="/ebooks/writer/book/downloads/book.kepub.epub">Kobo</a><a href="/ebooks/writer/book/downloads/book.epub">EPUB</a>'
+        with patch.object(articles,'fetch',side_effect=[('https://standardebooks.org/ebooks',results),('https://standardebooks.org/ebooks/writer/book/translator',page)]):
+            self.assertEqual(articles.public_book_url('The Book'),'https://standardebooks.org/ebooks/writer/book/downloads/book.epub')
+        results+='<a href="/ebooks/writer/book/other-translator">The Book</a>'
+        with patch.object(articles,'fetch',return_value=('https://standardebooks.org/ebooks',results)):
+            with self.assertRaisesRegex(ValueError,'unique public edition'):articles.public_book_url('The Book')
+
+    def test_private_readwise_library_links_do_not_open_a_login_page(self):
+        with self.assertRaisesRegex(ValueError,'private Readwise library'):
+            self.lib.fetch_link({'url':'https://read.readwise.io/read/private-document','openAfterSave':True})
+
+    def response(self,body,mime,url):
+        response=io.BytesIO(body);response.url=url;response.headers=Message();response.headers['Content-Type']=mime
+        return response
+
+    def test_pdf_links_download_as_private_local_files(self):
+        from unittest.mock import Mock
+        response=self.response(b'%PDF-1.7\nExample','application/pdf','https://example.org/paper.pdf')
+        opener=Mock();opener.open.return_value=response
+        with patch.object(articles.urllib.request,'build_opener',return_value=opener):
+            result=self.lib.fetch_link({'url':'https://example.org/paper.pdf','title':'A paper','openAfterSave':True})
+        self.assertEqual(result['fileType'],'pdf');self.assertEqual(result['title'],'A paper')
+        self.assertEqual(Path(result['filePath']).stat().st_mode&0o777,0o600)
+
+    def test_epub_link_opens_native_cached_file_with_navigation(self):
+        from unittest.mock import Mock
+        archive=io.BytesIO()
+        with zipfile.ZipFile(archive,'w') as bundle:
+            bundle.writestr('META-INF/container.xml','<container><rootfiles><rootfile full-path="book.opf"/></rootfiles></container>')
+            bundle.writestr('book.opf','<package><metadata><title>Linked book</title><creator>Writer</creator></metadata><manifest><item id="a" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="a"/></spine></package>')
+            bundle.writestr('chapter.xhtml','<html><body><h1>First chapter</h1><p>A complete readable chapter with plenty of meaningful words for the offline reading test.</p></body></html>')
+        opener=Mock();opener.open.return_value=self.response(archive.getvalue(),'application/epub+zip','https://example.org/book.epub')
+        with patch.object(articles.urllib.request,'build_opener',return_value=opener):
+            saved=self.lib.fetch_link({'url':'https://example.org/book.epub','openAfterSave':True})
+        reader=self.lib.open(saved['savedId'])
+        self.assertEqual(reader['title'],'Linked book');self.assertEqual(reader['chapters'][0]['title'],'First chapter')
+        self.assertTrue((Path(reader['htmlPath']).parent/'book').is_dir());self.assertTrue(Path(reader['htmlPath']).is_file())
+
+    def test_opening_an_existing_link_reuses_saved_text_offline(self):
+        identifier=self.save()
+        with patch.object(socket,'getaddrinfo',side_effect=OSError('offline')),patch.object(articles.urllib.request,'build_opener',side_effect=AssertionError('must not download again')):
+            result=self.lib.fetch_link({'url':'https://example.org/story','openAfterSave':True})
+        self.assertEqual(result['savedId'],identifier)
+
     def test_internal_chapter_links_survive_sanitization(self):
         identifier=self.save(content='<p><a href="#section">Jump</a></p><h2 id="section">A chapter</h2><p>Enough meaningful text to save and read this linked chapter.</p>')
         row=self.lib.article(identifier)
         self.assertIn('href="#section"',row['content']);self.assertIn('id="section"',row['content'])
+
+    def test_feed_link_reuses_canonical_subscription(self):
+        from unittest.mock import Mock
+        xml=b'<rss><channel><title>Essays</title><item><title>A story</title><link>https://example.org/story</link><description>A thoughtful story with enough words for an offline feed preview.</description></item></channel></rss>'
+        with patch.object(articles,'fetch',return_value=('https://example.org/feed',xml)):
+            self.lib.refresh_feed('https://example.org/feed')
+        opener=Mock();opener.open.return_value=self.response(xml,'application/rss+xml','https://example.org/feed')
+        with patch.object(articles.urllib.request,'build_opener',return_value=opener):
+            result=self.lib.fetch_link({'url':'https://old.example.org/feed','openAfterSave':True})
+        self.assertEqual(result['subscribedFeedURL'],'https://example.org/feed')
+        self.assertEqual(len(result['feeds']),1)
+        self.assertEqual(len(result['items']),1)
+
+    def test_initial_feed_import_is_latest_ten_and_does_not_flood_on_refresh(self):
+        xml='<rss><channel><title>Essays</title>'+''.join('<item><title>Story '+str(i)+'</title><link>https://example.org/story'+str(i)+'</link><pubDate>Mon, '+str(i+1)+' Jun 2026 12:00:00 GMT</pubDate><description>A thoughtful story with enough words for this feed preview.</description></item>' for i in range(20))+'</channel></rss>'
+        with patch.object(articles,'fetch',return_value=('https://example.org/feed',xml)):
+            self.lib.refresh_feed('https://example.org/feed')
+            self.lib.refresh_feed('https://example.org/feed',force=True)
+        rows=self.lib.list()['items'];self.assertEqual(len(rows),10)
+        self.assertEqual({r['title'] for r in rows},{'Story '+str(i) for i in range(10,20)})
+
+    def test_images_cache_locally_without_remote_reader_requests(self):
+        from unittest.mock import Mock
+        identifier=self.save(content='<p>An illustrated article with enough readable text for offline use.</p><img src="https://example.org/photo.jpg" alt="A landscape">')
+        before=Path(self.lib.open(identifier)['htmlPath']).read_text()
+        self.assertNotIn('src="https://',before)
+        opener=Mock();opener.open.return_value=self.response(b'jpeg test','image/jpeg','https://example.org/photo.jpg')
+        with patch.object(articles.urllib.request,'build_opener',return_value=opener):
+            result=self.lib.cache_images(identifier)
+        self.assertIn('https://example.org/photo.jpg',result['images'])
+        after=Path(self.lib.open(identifier)['htmlPath']).read_text()
+        self.assertIn('src="images/',after)
+        with patch.object(articles.urllib.request,'build_opener',side_effect=AssertionError('offline')):
+            self.assertEqual(self.lib.cache_images(identifier)['images'],result['images'])
 
     def test_invalid_progress_and_unsupported_feed_do_not_erase_library(self):
         self.save()

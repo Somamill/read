@@ -142,6 +142,12 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     private var readerChapterMenu:NSPopUpButton?
     private let articleQueue=DispatchQueue(label:"app.read.articles.local",qos:.userInitiated)
     private let articleFetchQueue=DispatchQueue(label:"app.read.articles.network",qos:.utility)
+    private var readerHistory:[[String:Any]]=[]
+    private var pendingReaderParent:[String:Any]?
+    private var publisherReader:PublisherReaderController?
+    private let articleImageQueue=DispatchQueue(label:"app.read.article-images",qos:.utility)
+    private var readerLinkHUD:NSView?
+    private var readerLinkRequest:String?
     private var articleSpeech:NSSpeechSynthesizer?
     private var readerContentsButton:NSButton?
     private var readerContentsPopover:NSPopover?
@@ -376,6 +382,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "reader", let body=message.body as? [String:Any] {
             switch body["type"] as? String {
+            case "link":
+                if let url=body["url"] as? String { openReaderLink(url,title:body["title"] as? String ?? "") }
             case "progress":
                 syncReaderProgress(body)
             case "highlight":
@@ -392,6 +400,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         }
         guard let body=message.body as? [String:Any], let type=body["type"] as? String else { return }
         switch type {
+        case "articleSourceFallback": showPublisherFallback(body)
+        case "loadArticleCover": if let id=body["id"] as? Int { loadArticleCover(id) }
+        case "articleLinkError":
+            if let request=body["linkRequest"] as? String,request == readerLinkRequest { articleLinkFailure(body["message"] as? String ?? "This link could not be opened.") }
         case "articles": articleRequest(body)
         case "annotations": annotationRequest(body)
         case "studio": studioRequest(body)
@@ -460,6 +472,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         case "loadDiscovery": loadDiscovery(body["period"] as? String ?? "weekly")
         case "loadHardcoverShelf": loadHardcoverShelf()
         case "searchHardcover": searchHardcover(body["query"] as? String ?? "")
+        case "openOriginalArticle":
+            if let raw=body["url"] as? String,let url=URL(string:raw),["https","http"].contains(url.scheme ?? "") { NSWorkspace.shared.open(url) }
         case "openBookLink": if let value=body["url"] as? String { openBookLink(value) }
         case "exportDiagnostics": exportDiagnostics(body["additionalText"] as? String ?? "")
         case "copyLogsToClipboard": copyLogsToClipboard()
@@ -624,7 +638,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         webView.evaluateJavaScript("window.shelfFocusSearch()",completionHandler:nil)
     }
     @objc private func menuArticles() { if activeReader != nil { closeReader() };webView.evaluateJavaScript("showPage('articles')",completionHandler:nil) }
-    @objc private func menuBack() { if activeReader != nil { closeReader() } else { webView.evaluateJavaScript("showPage('books')",completionHandler:nil) } }
+    @objc private func menuBack() { if activeReader != nil { readerBack() } else { webView.evaluateJavaScript("showPage('books')",completionHandler:nil) } }
     private var lastAutomaticReadwiseSync=Date.distantPast
     private var readwiseSyncInProgress=false
     private func automaticReadwiseSync() {
@@ -982,6 +996,71 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         }
     }
 
+    private func showPublisherFallback(_ body:[String:Any]){
+        guard let raw=body["url"] as? String,let url=URL(string:raw),["http","https"].contains(url.scheme ?? "") else{return}
+        if let request=body["linkRequest"] as? String,request != readerLinkRequest{return}
+        readerLinkHUD?.removeFromSuperview();readerLinkHUD=nil
+        let request=body["linkRequest"]
+        let controller=PublisherReaderController(url:url,capture:{[weak self] item in
+            self?.articleRequest(["action":"save","item":item,"openAfterSave":true,"linkRequest":request ?? NSNull()])
+        },back:{[weak self] in
+            guard let self else{return};self.readerLinkRequest=nil;self.pendingReaderParent=nil
+            self.window.contentView=self.readerContentView ?? self.dashboardContentView;self.publisherReader=nil
+        },openLink:{[weak self] raw in self?.openReaderLink(raw,title:"")})
+        publisherReader=controller;window.contentView=controller.view;window.title="Publisher view · read."
+    }
+
+    private func loadArticleCover(_ identifier:Int){
+        articleImageQueue.async{[weak self] in
+            guard let self else{return};let item=self.articleResult(["action":"cover","id":identifier]);var output:String?
+            if let path=item["path"] as? String,let source=CGImageSourceCreateWithURL(URL(fileURLWithPath:path) as CFURL,nil),let image=CGImageSourceCreateThumbnailAtIndex(source,0,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:260] as CFDictionary){
+                let data=NSMutableData();if let destination=CGImageDestinationCreateWithData(data,UTType.jpeg.identifier as CFString,1,nil){CGImageDestinationAddImage(destination,image,[kCGImageDestinationLossyCompressionQuality:0.75] as CFDictionary);if CGImageDestinationFinalize(destination){output="data:image/jpeg;base64,"+(data as Data).base64EncodedString()}}
+            }
+            let result=output;DispatchQueue.main.async{self.send("articleCoverLoaded",["id":identifier,"data":result as Any? ?? NSNull()])}
+        }
+    }
+
+    private func exportHighlightsToNotes(_ body:[String:Any]){
+        localAnnotationQueue.async{[weak self] in
+            guard let self else{return};let result=self.annotationResult(["action":"list","all":true]);var items=result["items"] as? [[String:Any]] ?? []
+            if let ids=body["ids"] as? [String]{let selected=Set(ids);items=items.filter{selected.contains($0["id"] as? String ?? "")}}
+            let selected=Array(items.prefix(100));let text=NotesExport.text(for:selected)
+            DispatchQueue.main.async{
+                guard !selected.isEmpty else{self.notify("Select a highlight to export first.");return}
+                let notes=NSSharingService.sharingServices(forItems:[text]).first{["notes","notizen","メモ","笔记","備忘錄"].contains($0.title.lowercased())}
+                guard let notes else{self.notify("Enable Notes in macOS Share extensions, then try again.");return}
+                notes.perform(withItems:[text])
+            }
+        }
+    }
+
+    private func openReaderLink(_ raw:String,title:String) {
+        guard let url=URL(string:raw),["http","https"].contains(url.scheme ?? ""),readerLinkHUD == nil else { return }
+        let hud=NSVisualEffectView(frame:NSRect(x:0,y:0,width:240,height:68));hud.material = .hudWindow;hud.state = .active;hud.wantsLayer=true;hud.layer?.cornerRadius=16
+        hud.translatesAutoresizingMaskIntoConstraints=false
+        let spinner=NSProgressIndicator(frame:NSRect(x:18,y:24,width:20,height:20));spinner.style = .spinning;spinner.startAnimation(nil);hud.addSubview(spinner)
+        let label=NSTextField(labelWithString:"Opening in read.…");label.frame=NSRect(x:52,y:24,width:180,height:20);hud.addSubview(label)
+        if let container=window.contentView { container.addSubview(hud);NSLayoutConstraint.activate([hud.centerXAnchor.constraint(equalTo:container.centerXAnchor),hud.centerYAnchor.constraint(equalTo:container.centerYAnchor),hud.widthAnchor.constraint(equalToConstant:240),hud.heightAnchor.constraint(equalToConstant:68)]) }
+        pendingReaderParent=activeReader.map{["articleId":$0["articleId"] ?? 0,"bookId":$0["bookId"] ?? 0]}
+        readerLinkHUD=hud;let request=UUID().uuidString;readerLinkRequest=request
+        articleRequest(["action":"fetch","url":raw,"title":title,"openAfterSave":true,"linkRequest":request])
+    }
+
+    private func articleLinkFailure(_ message:String) {
+        guard readerLinkHUD != nil else { return }
+        readerLinkHUD?.removeFromSuperview();readerLinkHUD=nil;self.readerLinkRequest=nil
+        let alert=NSAlert();alert.messageText="Could not open this link in read.";alert.informativeText=message;alert.addButton(withTitle:"OK");alert.beginSheetModal(for:window)
+    }
+
+    func webView(_ webView:WKWebView,decidePolicyFor navigationAction:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
+        if webView === readerWebView,let url=navigationAction.request.url,["http","https"].contains(url.scheme ?? "") {
+            decisionHandler(.cancel)
+            if navigationAction.navigationType == .linkActivated { openReaderLink(url.absoluteString,title:"") }
+            return
+        }
+        decisionHandler(.allow)
+    }
+
     private func articleResult(_ payload:[String:Any])->[String:Any] {
         guard let helper=Bundle.main.resourceURL?.appendingPathComponent("read_articles.py").path,
               let bytes=try? JSONSerialization.data(withJSONObject:payload),let json=String(data:bytes,encoding:.utf8) else { return ["ok":false,"error":"Could not open the article library."] }
@@ -996,10 +1075,11 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             if articleSpeech?.isSpeaking == true { articleSpeech?.stopSpeaking();return }
             articleSpeech=NSSpeechSynthesizer();articleSpeech?.startSpeaking(text);return
         }
-        let queue=["fetch","subscribe","refresh"].contains(action) ? articleFetchQueue : articleQueue
+        let queue=action == "images" ? articleImageQueue : (["fetch","subscribe","refresh"].contains(action) ? articleFetchQueue : articleQueue)
         queue.async { [weak self] in
             guard let self else { return }
             var result=self.articleResult(body)
+            if let request=body["linkRequest"] as? String { result["linkRequest"]=request }
             if action == "open" || action == "openDocument",result["ok"] as? Bool == true {
                 let annotations=self.annotationResult(["action":"list","rules":["document":result["document"] ?? ""]])
                 result["savedHighlights"]=annotations["items"] ?? []
@@ -1007,11 +1087,49 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             }
             let response=result
             DispatchQueue.main.async {
-                if response["ok"] as? Bool != true { self.send("articleError",response);return }
-                if action == "fetch" { self.send("articleFetched",response);return }
+                if let request=body["linkRequest"] as? String,request != self.readerLinkRequest { return }
+                if response["ok"] as? Bool != true { self.articleLinkFailure(response["error"] as? String ?? "The source could not be read.");self.send("articleError",response);return }
+                if action == "fetch",response["fileType"] as? String == "pdf",let path=response["filePath"] as? String {
+                    self.articleQueue.async {
+                        guard let pdf=PDFDocument(url:URL(fileURLWithPath:path)) else { DispatchQueue.main.async { self.articleLinkFailure("This PDF could not be read.") };return }
+                        let escape:(String)->String = { $0.replacingOccurrences(of:"&",with:"&amp;").replacingOccurrences(of:"<",with:"&lt;").replacingOccurrences(of:">",with:"&gt;") }
+                        var sections:[String]=[]
+                        var scanned=0
+                        for index in 0..<pdf.pageCount {
+                            if let request=body["linkRequest"] as? String,DispatchQueue.main.sync(execute:{self.readerLinkRequest != request}){return}
+                            guard let page=pdf.page(at:index) else{continue}
+                            var text=page.string ?? ""
+                            if text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
+                                scanned+=1
+                                if scanned>20{DispatchQueue.main.async{self.articleLinkFailure("This PDF has more than 20 scanned pages. Use Studio OCR for a larger explicit OCR job.")};return}
+                                let bounds=page.bounds(for:.mediaBox),scale=1800/max(1,max(bounds.width,bounds.height))
+                                let image=page.thumbnail(of:NSSize(width:bounds.width*scale,height:bounds.height*scale),for:.mediaBox)
+                                if let cg=image.cgImage(forProposedRect:nil,context:nil,hints:nil){
+                                    let request=VNRecognizeTextRequest();request.recognitionLevel = .accurate;request.usesLanguageCorrection=true;request.automaticallyDetectsLanguage=true;request.recognitionLanguages=["en-US","de-DE","ja-JP"]
+                                    try? VNImageRequestHandler(cgImage:cg,options:[:]).perform([request]);text=(request.results ?? []).compactMap{$0.topCandidates(1).first?.string}.joined(separator:"\n")
+                                }
+                            }
+                            let paragraphs=ReadingText.paragraphs(from:text)
+                            if !paragraphs.isEmpty{sections.append("<h2>Page \(index+1)</h2>"+paragraphs.map{"<p>"+escape($0)+"</p>"}.joined())}
+                        }
+                        guard !sections.isEmpty else { DispatchQueue.main.async { self.articleLinkFailure("No readable text could be recovered from this PDF, including on-device OCR.") };return }
+                        let item:[String:Any]=["url":response["url"] ?? "","title":response["title"] ?? "PDF","content":sections.joined(),"documentType":"pdf"]
+                        DispatchQueue.main.async { self.articleRequest(["action":"save","item":item,"openAfterSave":true,"linkRequest":body["linkRequest"] ?? NSNull()]) }
+                    };return
+                }
+                if action == "fetch",response["html"] != nil { self.send("articleFetched",response);return }
+                if action == "images" {
+                    if (self.activeReader?["articleId"] as? Int)==(response["articleId"] as? Int),let images=response["images"],let bytes=try? JSONSerialization.data(withJSONObject:images),let json=String(data:bytes,encoding:.utf8){self.readerWebView?.evaluateJavaScript("window.readerSetImages&&window.readerSetImages(\(json))",completionHandler:nil)}
+                    return
+                }
+                if response["subscribedFeedURL"] != nil { if self.activeReader != nil { self.closeReader() };self.send("articleData",response);return }
                 if action == "search" { self.send("articleSearchResults",response);return }
                 if action == "open" || action == "openDocument",let html=response["htmlPath"] as? String,let directory=response["workDir"] as? String {
-                    self.showReader(response,htmlURL:URL(fileURLWithPath:html),workDirectory:URL(fileURLWithPath:directory));if body["listen"] as? Bool == true { self.articleRequest(["action":"listen"]) };return
+                    if body["linkRequest"] != nil,let parent=self.pendingReaderParent,(parent["articleId"] as? Int ?? 0) != (response["articleId"] as? Int ?? 0) || (parent["bookId"] as? Int ?? 0)>0 { self.readerHistory.append(parent);self.readerHistory=Array(self.readerHistory.suffix(16)) }
+                    self.pendingReaderParent=nil
+                    self.readerLinkHUD?.removeFromSuperview();self.readerLinkHUD=nil;self.readerLinkRequest=nil
+                    self.publisherReader=nil
+                    self.showReader(response,htmlURL:URL(fileURLWithPath:html),workDirectory:URL(fileURLWithPath:directory));self.articleRequest(["action":"images","id":response["articleId"] ?? 0]);if body["listen"] as? Bool == true { self.articleRequest(["action":"listen"]) };return
                 }
                 if let text=response["exportText"] as? String {
                     let panel=NSSavePanel();panel.nameFieldStringValue="read-articles.md";panel.allowedContentTypes=[UTType(filenameExtension:"md") ?? .plainText]
@@ -1153,12 +1271,17 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let content=WKUserContentController()
         content.add(WeakScriptMessageHandler(self),name:"reader")
         let config=WKWebViewConfiguration(); config.userContentController=content
+        if let linkScript=Bundle.main.url(forResource:"reader-links",withExtension:"js"),let source=try? String(contentsOf:linkScript,encoding:.utf8) {
+            config.userContentController.addUserScript(WKUserScript(source:source,injectionTime:.atDocumentEnd,forMainFrameOnly:true))
+        }
+        if let extra=Bundle.main.url(forResource:"reader-experience",withExtension:"js"),let script=try? String(contentsOf:extra,encoding:.utf8){config.userContentController.addUserScript(WKUserScript(source:script,injectionTime:.atDocumentEnd,forMainFrameOnly:true))}
         let readerData:[String:Any]=[
             "bookId":payload["bookId"] ?? 0,
             "kind":payload["kind"] ?? "book",
             "articleId":payload["articleId"] ?? 0,
             "articleText":payload["articleText"] ?? "",
             "sourceURL":payload["sourceURL"] ?? "",
+            "documentType":payload["documentType"] ?? "book",
             "toc":payload["chapters"] ?? [],
             "document":payload["document"] ?? "",
             "syncDocuments":payload["syncDocuments"] ?? [payload["document"] ?? ""],
@@ -1196,12 +1319,13 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let spacing=["compact","normal","relaxed"].contains(savedSpacing) ? savedSpacing : "normal"
         if let json=try? JSONSerialization.data(withJSONObject:readerData,options:[.fragmentsAllowed,.sortedKeys]),
            let source=String(data:json,encoding:.utf8) {
+            let readerStyle=(try? String(contentsOf:Bundle.main.url(forResource:"reader-style",withExtension:"css")!,encoding:.utf8)) ?? ""
             let bootstrap="""
             (function(){
               window.readerBook=\(source);
               const style=document.createElement('style');
-              style.textContent='html,body{height:100%!important;overflow:hidden!important;background:var(--reader-paper)!important}body{margin:0!important;padding:0!important;max-width:none!important;font-family:var(--reader-font)!important;font-size:var(--reader-size)!important;line-height:var(--reader-leading)!important;color:var(--reader-ink)!important;transition:background-color .18s,color .18s}#reader-viewport{position:fixed;inset:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;scroll-snap-type:x mandatory;scrollbar-width:none;background:var(--reader-paper)}#reader-viewport::-webkit-scrollbar{display:none}#reader-flow{box-sizing:border-box!important;width:100vw!important;max-width:none!important;height:100%!important;padding:48px 280px 104px;column-width:790px;column-gap:560px;column-fill:auto!important;orphans:2;widows:2;transition:font-size .18s;overflow:visible}#reader-flow>div,#reader-flow>section{break-inside:auto!important;max-width:none!important}#reader-flow p{margin:0 0 1.15em!important}#reader-flow h1,#reader-flow h2,#reader-flow h3,#reader-flow h4{line-height:1.4!important;margin:1.4em 0 .7em!important;break-after:avoid;scroll-margin-top:18px}#reader-flow img{max-width:min(56vw,560px)!important;max-height:48vh!important;width:auto!important;height:auto!important;object-fit:contain;break-inside:avoid;display:block;margin-inline:auto}#reader-flow svg{width:min(56vw,560px)!important;height:auto!important;max-height:48vh!important;break-inside:avoid;display:block;margin-inline:auto}#reader-flow blockquote{margin-inline-start:1.4em!important}#reader-flow pre{white-space:pre-wrap!important}#reader-flow table{max-width:100%;font-size:.9em}#reader-flow :where(p,div,section,article,span,h1,h2,h3,h4,h5,h6,li,blockquote){color:inherit!important;background-color:transparent!important;font-family:inherit!important}#reader-flow a{color:#669dff!important}#reader-flow mark.reader-highlight{background:#ffe08a!important;color:inherit!important;border-radius:2px}';document.head.appendChild(style);
-              let lastSent=-1,lastCandidate=0,lastChapter=-1,lastPositionSent=0,lastProgressAttempt=0,progressSyncPending=false,allowProgressSync=false,userHasNavigated=false,pageCount=1,currentPage=0,readerViewport=null,readerFlow=null;
+              style.textContent='html,body{height:100%!important;overflow:hidden!important;background:var(--reader-paper)!important}body{margin:0!important;padding:0!important;max-width:none!important;font-family:var(--reader-font)!important;font-size:var(--reader-size)!important;line-height:var(--reader-leading)!important;color:var(--reader-ink)!important;transition:background-color .18s,color .18s}#reader-viewport{position:fixed;inset:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;scroll-snap-type:x proximity;scrollbar-width:none;background:var(--reader-paper)}#reader-viewport::-webkit-scrollbar{display:none}#reader-flow{box-sizing:border-box!important;width:100vw!important;max-width:none!important;height:100%!important;padding:48px 280px 104px;column-width:790px;column-gap:560px;column-fill:auto!important;orphans:2;widows:2;transition:font-size .18s;overflow:visible}#reader-flow>div,#reader-flow>section{break-inside:auto!important;max-width:none!important}#reader-flow p{margin:0 0 1.15em!important}#reader-flow h1,#reader-flow h2,#reader-flow h3,#reader-flow h4{line-height:1.4!important;margin:1.4em 0 .7em!important;break-after:avoid;scroll-margin-top:18px}#reader-flow img{max-width:min(56vw,560px)!important;max-height:48vh!important;width:auto!important;height:auto!important;object-fit:contain;break-inside:avoid;display:block;margin-inline:auto}#reader-flow svg{width:min(56vw,560px)!important;height:auto!important;max-height:48vh!important;break-inside:avoid;display:block;margin-inline:auto}#reader-flow blockquote{margin-inline-start:1.4em!important}#reader-flow pre{white-space:pre-wrap!important}#reader-flow table{max-width:100%;font-size:.9em}#reader-flow :where(p,div,section,article,span,h1,h2,h3,h4,h5,h6,li,blockquote){color:inherit!important;background-color:transparent!important;font-family:inherit!important}#reader-flow a{color:#669dff!important}#reader-flow mark.reader-highlight{background:#ffe08a!important;color:inherit!important;border-radius:2px}';document.head.appendChild(style);const polish=document.createElement('style');polish.textContent=\(Self.javascriptString(readerStyle));document.head.appendChild(polish);
+              let lastSent=-1,lastCandidate=0,lastChapter=-1,lastPositionSent=0,lastProgressAttempt=0,progressSyncPending=false,allowProgressSync=false,userHasNavigated=false,pageCount=1,currentPage=0,readerViewport=null,readerFlow=null,wheelActive=false;
               window.readerApplyPreferences=function(p){const japanese=(String(window.readerBook.language||'').toLowerCase().startsWith('ja')||/[\\u3040-\\u30ff\\u3400-\\u9fff]/.test(window.readerBook.title||''));const fonts={serif:japanese?'"Noto Serif CJK JP","Hiragino Mincho ProN",serif':'"Noto Serif","Charter",Georgia,serif',sans:japanese?'"Noto Sans CJK JP","Hiragino Sans",sans-serif':'"Noto Sans",-apple-system,BlinkMacSystemFont,sans-serif',system:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif'};const themes={light:['#ffffff','#222222'],paper:['#f6f3eb','#302c24'],night:['#17191b','#e7e4dd'],oled:['#000000','#f1f1f3']};const palette=p.theme==='auto'?(p.appearance==='dark'?themes.oled:themes.paper):(themes[p.theme]||themes.paper);const leading={compact:'1.55',normal:'1.72',relaxed:'1.9'};const root=document.documentElement;root.style.colorScheme=(palette===themes.oled||palette===themes.night)?'dark':'light';root.style.setProperty('--reader-font',fonts[p.font]||fonts.sans);root.style.setProperty('--reader-size',(Number(p.size)||19)+'px');root.style.setProperty('--reader-leading',leading[p.spacing]||leading.normal);root.style.setProperty('--reader-paper',palette[0]);root.style.setProperty('--reader-ink',palette[1]);if(readerFlow)readerFlow.style.fontFamily=fonts[p.font]||fonts.sans;if(readerFlow)readerFlow.style.fontSize=(Number(p.size)||19)+'px';setTimeout(()=>{if(readerViewport){layoutPages();setPage(currentPage,false)}},80)};
               let titleKey=(window.readerBook.title||'').trim().toLocaleLowerCase();
               const chapterEntries=[],seenChapterTargets=new Set();
@@ -1223,12 +1347,13 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
               const headings=chapterEntries.map(entry=>entry.element);headings.forEach((h,i)=>{if(!h.id)h.id='reader-section-'+i});
               window.readerChapters=chapterEntries.map((entry,i)=>({title:entry.title||('Section '+(i+1)),id:entry.element.id,depth:entry.depth||0}));
               function step(){return readerViewport?readerViewport.clientWidth:window.innerWidth}
-              function layoutPages(){if(!readerViewport||!readerFlow)return;const previousCount=pageCount,previousProgress=pageCount<=1?0:currentPage/(pageCount-1);const width=step(),column=Math.max(280,Math.min(790,width-108)),margin=Math.max(54,(width-column)/2),gap=Math.max(0,width-column);readerFlow.style.width=width+'px';readerFlow.style.paddingLeft=margin+'px';readerFlow.style.paddingRight=margin+'px';readerFlow.style.columnWidth=column+'px';readerFlow.style.columnGap=gap+'px';const extent=Math.max(width,readerFlow.scrollWidth);pageCount=Math.max(1,Math.ceil((extent-1)/width));if(pageCount!==previousCount){const anchor=userHasNavigated?previousProgress:Number(window.readerBook.resumePercentage||0);currentPage=Math.round(Math.max(0,Math.min(1,anchor))*(pageCount-1));readerViewport.scrollLeft=currentPage*width}currentPage=Math.max(0,Math.min(pageCount-1,currentPage));}
+              function layoutPages(){if(!readerViewport||!readerFlow)return;const previousCount=pageCount,previousProgress=pageCount<=1?0:currentPage/(pageCount-1);const width=step(),count=width>=2100?3:width>=1180?2:1,column=Math.max(280,Math.min(count>1?650:790,width/count-72)),gap=Math.max(0,width/count-column),margin=gap/2;readerFlow.style.width=width+'px';readerFlow.style.paddingLeft=margin+'px';readerFlow.style.paddingRight=margin+'px';readerFlow.style.columnWidth=column+'px';readerFlow.style.columnCount=String(count);readerFlow.style.setProperty('--reader-column',column+'px');readerFlow.style.columnGap=gap+'px';const extent=Math.max(width,readerFlow.scrollWidth);pageCount=Math.max(1,Math.ceil((extent-1)/width));if(pageCount!==previousCount){const anchor=userHasNavigated?previousProgress:Number(window.readerBook.resumePercentage||0);currentPage=Math.round(Math.max(0,Math.min(1,anchor))*(pageCount-1));readerViewport.scrollLeft=currentPage*width}currentPage=Math.max(0,Math.min(pageCount-1,currentPage));}
               function chapterIndex(){let result=0,scroll=readerViewport?readerViewport.scrollLeft:0,best=-Infinity;for(let n=0;n<headings.length;n++){const x=headings[n].getBoundingClientRect().left+scroll;if(x<=scroll+step()*.42&&x>best){best=x;result=n}}return result;}
               function percentage(){return pageCount<=1?0:currentPage/(pageCount-1)}
               function sendPosition(){if(!readerViewport)return;layoutPages();const c=chapterIndex();lastCandidate=percentage();window.webkit.messageHandlers.reader.postMessage({type:'position',percentage:lastCandidate,userNavigated:userHasNavigated,chapter:c,chapterTitle:window.readerChapters[c]?.title||'',page:currentPage+1,pages:pageCount})}
               function setPage(page,userAction){if(!readerViewport)return;layoutPages();currentPage=Math.max(0,Math.min(pageCount-1,Math.round(page)));if(userAction){allowProgressSync=true;userHasNavigated=true}readerViewport.scrollTo({left:currentPage*step(),behavior:userAction?'smooth':'instant'});window.setTimeout(sendPosition,240);if(userAction)window.setTimeout(window.syncReaderProgress,320)}
               window.readerSetResume=function(value){const p=Math.max(0,Math.min(1,Number(value)||0));window.readerBook.resumePercentage=p;if(userHasNavigated)return;lastSent=p;lastCandidate=p;if(!readerViewport)return;layoutPages();currentPage=Math.round((pageCount-1)*p);readerViewport.scrollLeft=currentPage*step();sendPosition()};
+              window.readerRelayout=function(){layoutPages();setPage(currentPage,false)};
               window.readerPage=function(offset){setPage(currentPage+Number(offset||0),true)};
               window.readerGoTo=function(index){const h=headings[Math.max(0,Math.min(headings.length-1,Number(index)||0))];if(h){const x=h.getBoundingClientRect().left+readerViewport.scrollLeft;setPage(Math.round(x/step()),true)}};
               window.readerScrollTo=function(p){setPage(Math.round((pageCount-1)*Math.max(0,Math.min(1,Number(p)||0))),true)};
@@ -1237,12 +1362,12 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
               document.addEventListener('selectionchange',rememberHighlightSelection);document.addEventListener('mouseup',rememberHighlightSelection);document.addEventListener('touchend',rememberHighlightSelection);
               function rangeAt(start,end){if(!readerFlow||start<0||end<=start)return null;const walk=document.createTreeWalker(readerFlow,NodeFilter.SHOW_TEXT);let pos=0,node,range=document.createRange(),begun=false;while((node=walk.nextNode())){const next=pos+node.nodeValue.length;if(!begun&&start>=pos&&start<next){range.setStart(node,start-pos);begun=true}if(begun&&end<=next){range.setEnd(node,end-pos);return range}pos=next}return null}
               function highlightRange(item){const all=readerFlow?.textContent||'',quote=String(item.text||''),loc=item.location||{};if(!quote)return null;const start=Number(loc.start),end=Number(loc.end);if(Number.isInteger(start)&&Number.isInteger(end)&&all.slice(start,end)===quote)return rangeAt(start,end);let index=-1,candidates=[];while((index=all.indexOf(quote,index+1))>=0){if(loc.prefix&&!all.slice(Math.max(0,index-loc.prefix.length),index).endsWith(loc.prefix))continue;if(loc.suffix&&!all.slice(index+quote.length,index+quote.length+loc.suffix.length).startsWith(loc.suffix))continue;candidates.push(index)}return candidates.length===1?rangeAt(candidates[0],candidates[0]+quote.length):null}
-              function wrapHighlight(range,note,color='yellow'){try{const mark=document.createElement('mark');mark.className='reader-highlight';mark.style.setProperty('background',({yellow:'#ffe08a',green:'#a7d8b9',blue:'#a9c9f1',pink:'#edb1d1'})[color]||'#ffe08a','important');if(note)mark.title=note;mark.appendChild(range.extractContents());range.insertNode(mark);return true}catch(_){return false}}
+              function wrapHighlight(range,note,color='yellow'){try{const mark=document.createElement('mark');mark.className='reader-highlight';mark.style.setProperty('background',({yellow:'#ffe08a66',green:'#a7d8b966',blue:'#a9c9f166',pink:'#edb1d166'})[color]||'#ffe08a66','important');if(note)mark.title=note;mark.appendChild(range.extractContents());range.insertNode(mark);return true}catch(_){return false}}
               window.readerApplyHighlightText=function(text,note){if(savedHighlightRange&&savedHighlightText===text){const ok=wrapHighlight(savedHighlightRange,note,window.readerBook.highlightColor);savedHighlightRange=null;savedHighlightText='';return ok}const range=highlightRange({text});return range?wrapHighlight(range,note):false};
               window.readerApplySavedHighlights=function(){for(const mark of [...readerFlow.querySelectorAll('mark.reader-highlight')])mark.replaceWith(...mark.childNodes);readerFlow.normalize();for(const item of(window.readerBook.savedHighlights||[])){if(item.archived)continue;const range=highlightRange(item);if(range)wrapHighlight(range,item.note,item.color)}};
               window.readerFocusHighlight=function(item){const range=highlightRange(item);if(!range){window.webkit.messageHandlers.reader.postMessage({type:'highlightError',message:'This passage location could not be matched safely in the current edition.'});return}const rect=range.getBoundingClientRect(),x=rect.left+readerViewport.scrollLeft;setPage(Math.floor(x/step()),false);userHasNavigated=true};
-              window.captureReaderHighlight=function(){const selection=window.getSelection(),selected=(selection?.toString()||'').trim(),text=selected||savedHighlightText,range=selection?.rangeCount?selection.getRangeAt(0).cloneRange():savedHighlightRange;if(!text||!range||!readerFlow.contains(range.commonAncestorContainer)){window.webkit.messageHandlers.reader.postMessage({type:'highlightError',message:'Select a passage first, then choose Highlight.'});return}if(text.length>4096){window.webkit.messageHandlers.reader.postMessage({type:'highlightError',message:'That passage is too long to save as one highlight.'});return}const before=document.createRange();before.selectNodeContents(readerFlow);before.setEnd(range.startContainer,range.startOffset);const raw=range.toString(),leading=raw.length-raw.trimStart().length,start=before.toString().length+leading,end=start+text.length,all=readerFlow.textContent||'';savedHighlightRange=range;savedHighlightText=text;const c=chapterIndex();window.webkit.messageHandlers.reader.postMessage({type:'highlight',text,chapter:window.readerChapters[c]?.title||'',chapterIndex:c,page:currentPage+1,pages:pageCount,percentage:percentage(),start,end,prefix:all.slice(Math.max(0,start-48),start),suffix:all.slice(end,end+48)})};
-              function setupPages(){readerViewport=document.createElement('main');readerViewport.id='reader-viewport';readerFlow=document.createElement('article');readerFlow.id='reader-flow';while(document.body.firstChild)readerFlow.appendChild(document.body.firstChild);readerViewport.appendChild(readerFlow);document.body.appendChild(readerViewport);const userRead=()=>{allowProgressSync=true};let touchStart=null,wheelTravel=0,lastWheelPage=0;readerViewport.addEventListener('pointerdown',userRead,{passive:true});readerViewport.addEventListener('touchstart',e=>{userRead();const t=e.changedTouches[0];touchStart={x:t.clientX,y:t.clientY,moved:false}},{passive:true});readerViewport.addEventListener('touchmove',e=>{if(!touchStart)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;if(Math.abs(dx)>16&&Math.abs(dx)>Math.abs(dy)*1.2){touchStart.moved=true;e.preventDefault()}},{passive:false});readerViewport.addEventListener('touchend',e=>{if(!touchStart)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y,moved=touchStart.moved;touchStart=null;if(moved&&Math.abs(dx)>54&&Math.abs(dx)>Math.abs(dy)*1.35)window.readerPage(dx<0?1:-1)},{passive:true});readerViewport.addEventListener('wheel',e=>{userRead();if(Math.abs(e.deltaX)>Math.abs(e.deltaY)*1.35){e.preventDefault();wheelTravel+=e.deltaX;if(Math.abs(wheelTravel)>=72&&Date.now()-lastWheelPage>620){window.readerPage(wheelTravel>0?1:-1);wheelTravel=0;lastWheelPage=Date.now()}}else{wheelTravel=0}},{passive:false});readerViewport.addEventListener('scroll',()=>{currentPage=Math.max(0,Math.min(pageCount-1,Math.round(readerViewport.scrollLeft/step())));if(Date.now()-lastPositionSent>160){lastPositionSent=Date.now();sendPosition()}if(allowProgressSync)window.syncReaderProgress()},{passive:true});window.addEventListener('resize',()=>{const p=percentage();layoutPages();setPage(Math.round(p*(pageCount-1)),false)});}
+              window.captureReaderHighlight=function(destination){const selection=window.getSelection(),selected=(selection?.toString()||'').trim(),text=selected||savedHighlightText,range=selection?.rangeCount?selection.getRangeAt(0).cloneRange():savedHighlightRange;if(!text||!range||!readerFlow.contains(range.commonAncestorContainer)){window.webkit.messageHandlers.reader.postMessage({type:'highlightError',message:'Select a passage first, then choose Highlight.'});return}if(text.length>4096){window.webkit.messageHandlers.reader.postMessage({type:'highlightError',message:'That passage is too long to save as one highlight.'});return}const before=document.createRange();before.selectNodeContents(readerFlow);before.setEnd(range.startContainer,range.startOffset);const raw=range.toString(),leading=raw.length-raw.trimStart().length,start=before.toString().length+leading,end=start+text.length,all=readerFlow.textContent||'';savedHighlightRange=range;savedHighlightText=text;const c=chapterIndex();window.webkit.messageHandlers.reader.postMessage({type:'highlight',exportNotes:destination==='notes',text,chapter:window.readerChapters[c]?.title||'',chapterIndex:c,page:currentPage+1,pages:pageCount,percentage:percentage(),start,end,prefix:all.slice(Math.max(0,start-48),start),suffix:all.slice(end,end+48)})};
+              function setupPages(){readerViewport=document.createElement('main');readerViewport.id='reader-viewport';readerFlow=document.createElement('article');readerFlow.id='reader-flow';while(document.body.firstChild)readerFlow.appendChild(document.body.firstChild);readerViewport.appendChild(readerFlow);document.body.appendChild(readerViewport);const userRead=()=>{allowProgressSync=true};let touchStart=null,wheelTravel=0,lastWheelPage=0;readerViewport.addEventListener('pointerdown',userRead,{passive:true});readerViewport.addEventListener('touchstart',e=>{userRead();const t=e.changedTouches[0];touchStart={x:t.clientX,y:t.clientY,moved:false}},{passive:true});readerViewport.addEventListener('touchmove',e=>{if(!touchStart)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;if(Math.abs(dx)>16&&Math.abs(dx)>Math.abs(dy)*1.2){touchStart.moved=true;e.preventDefault()}},{passive:false});readerViewport.addEventListener('touchend',e=>{if(!touchStart)return;const t=e.changedTouches[0],dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y,moved=touchStart.moved;touchStart=null;if(moved&&Math.abs(dx)>54&&Math.abs(dx)>Math.abs(dy)*1.35)window.readerPage(dx<0?1:-1)},{passive:true});let wheelTimer,wheelFrame=0,wheelDelta=0;readerViewport.addEventListener('wheel',e=>{e.preventDefault();userRead();userHasNavigated=true;wheelActive=true;wheelDelta+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY)*(e.deltaMode===1?16:1);if(!wheelFrame)wheelFrame=requestAnimationFrame(()=>{readerViewport.scrollLeft+=wheelDelta;wheelDelta=0;wheelFrame=0});clearTimeout(wheelTimer);wheelTimer=setTimeout(()=>{wheelActive=false;setPage(Math.round(readerViewport.scrollLeft/step()),true)},180)},{passive:false});readerViewport.addEventListener('scroll',()=>{currentPage=Math.max(0,Math.min(pageCount-1,Math.round(readerViewport.scrollLeft/step())));if(Date.now()-lastPositionSent>160){lastPositionSent=Date.now();sendPosition()}if(allowProgressSync&&!wheelActive)window.syncReaderProgress()},{passive:true});window.addEventListener('resize',()=>{const p=percentage();layoutPages();setPage(Math.round(p*(pageCount-1)),false)});}
               window.readerAckProgress=function(p){lastSent=Number(p);progressSyncPending=false;if(Math.abs(percentage()-lastSent)>=0.000001)setTimeout(window.syncReaderProgress,350)};
               window.readerFailProgress=function(){progressSyncPending=false};
               window.syncReaderProgress=function(force=false){force=force===true;if(!allowProgressSync||(!force&&progressSyncPending))return;lastCandidate=percentage();if(lastSent>=0&&Math.abs(lastCandidate-lastSent)<0.000001)return;if(!force&&Date.now()-lastProgressAttempt<1500)return;lastProgressAttempt=Date.now();progressSyncPending=true;window.webkit.messageHandlers.reader.postMessage({type:'progress',bookId:window.readerBook.bookId,document:window.readerBook.document,syncDocuments:window.readerBook.syncDocuments,percentage:lastCandidate,progress:lastCandidate.toFixed(6),metadata:{title:window.readerBook.title,authors:window.readerBook.authors,filename:window.readerBook.filename,language:window.readerBook.language}})};
@@ -1298,12 +1423,13 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func makeReaderToolbar()->NSView {
         let toolbar=ReaderOverlayView(frame:.zero)
-        let back=NSButton(image:NSImage(systemSymbolName:"chevron.left",accessibilityDescription:"Back to library")!,target:self,action:#selector(closeReader))
-        back.isBordered=false; back.toolTip="Back to library"; back.setContentHuggingPriority(.required,for:.horizontal); back.imagePosition = .imageOnly
-        back.widthAnchor.constraint(equalToConstant:32).isActive=true; back.heightAnchor.constraint(equalToConstant:32).isActive=true
+        let back=NSButton(title:"Library",image:NSImage(systemSymbolName:"chevron.left",accessibilityDescription:"Back to library")!,target:self,action:#selector(readerBack))
+        back.isBordered=true;back.bezelStyle = .rounded;back.bezelColor = .controlAccentColor;back.font = .systemFont(ofSize:13,weight:.semibold);back.toolTip="Back to library";back.setAccessibilityLabel("Back to library");back.setContentHuggingPriority(.required,for:.horizontal);back.imagePosition = .imageLeading
+        back.widthAnchor.constraint(equalToConstant:94).isActive=true; back.heightAnchor.constraint(equalToConstant:32).isActive=true
+        if !readerHistory.isEmpty {back.title="Back";back.toolTip="Back to previous reading";back.setAccessibilityLabel("Back to previous reading")}
         let chapter=NSPopUpButton(frame:.zero,pullsDown:false); chapter.addItem(withTitle:"Contents"); chapter.target=self; chapter.action=#selector(readerSelectChapter(_:)); chapter.cell?.lineBreakMode = .byTruncatingTail; chapter.widthAnchor.constraint(equalToConstant:160).isActive=true; chapter.controlSize = .small; readerChapterMenu=chapter
         let contents=NSButton(title:"Contents",image:NSImage(systemSymbolName:"list.bullet",accessibilityDescription:"Book chapters")!,target:self,action:#selector(showReaderContents(_:)))
-        contents.bezelStyle = .rounded;contents.imagePosition = .imageLeading;contents.widthAnchor.constraint(equalToConstant:190).isActive=true;contents.lineBreakMode = .byTruncatingTail
+        contents.bezelStyle = .rounded;contents.imagePosition = .imageLeading;contents.widthAnchor.constraint(lessThanOrEqualToConstant:190).isActive=true;contents.widthAnchor.constraint(greaterThanOrEqualToConstant:104).isActive=true;contents.setContentCompressionResistancePriority(.defaultLow,for:.horizontal);contents.lineBreakMode = .byTruncatingTail
         contents.toolTip="Search and navigate book chapters";readerContentsButton=contents
         let top=NSStackView(views:[back]); top.orientation = .horizontal; top.alignment = .centerY; top.distribution = .fill; top.translatesAutoresizingMaskIntoConstraints=false
 
@@ -1447,6 +1573,13 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     @objc private func readerSelectTheme(_ sender:NSPopUpButton) { let values=["auto","light","paper","night","oled"]; let index=sender.indexOfSelectedItem; guard values.indices.contains(index) else { return }; UserDefaults.standard.set(values[index],forKey:"readerTheme"); applyReaderPreferences() }
     @objc private func readerSelectSpacing(_ sender:NSPopUpButton) { let values=["compact","normal","relaxed"]; let index=sender.indexOfSelectedItem; guard values.indices.contains(index) else { return }; UserDefaults.standard.set(values[index],forKey:"readerSpacing"); applyReaderPreferences() }
     @objc private func readerProgressChanged(_ sender:NSSlider) { readerWebView?.evaluateJavaScript("window.readerScrollTo(\(sender.doubleValue));",completionHandler:nil) }
+    @objc private func readerBack(){
+        if let previous=readerHistory.popLast(){
+            readerLinkHUD?.removeFromSuperview();readerLinkHUD=nil;readerLinkRequest=nil
+            if let id=previous["articleId"] as? Int,id>0{articleRequest(["action":"open","id":id])}
+            else if let id=previous["bookId"] as? Int,id>0{openBook(id)}
+        }else{closeReader()}
+    }
     @objc private func closeReader() {
         guard !closingReader,let web=readerWebView else { return }
         closingReader=true
@@ -1462,6 +1595,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         if let monitor=readerKeyMonitor { NSEvent.removeMonitor(monitor); readerKeyMonitor=nil }
         let directory=readerTempDirectory
         let removeDirectory = !readerWorkIsPersistentCache
+        readerLinkHUD?.removeFromSuperview();readerLinkHUD=nil;self.readerLinkRequest=nil
+        publisherReader=nil;readerHistory.removeAll();pendingReaderParent=nil
         articleSpeech?.stopSpeaking();articleSpeech=nil
         readerWebView?.stopLoading()
         readerWebView?.configuration.userContentController.removeScriptMessageHandler(forName:"reader")
@@ -1487,7 +1622,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             let result=self.annotationResult(["action":"add","item":item,"all":true])
             DispatchQueue.main.async {
                 guard result["ok"] as? Bool == true else { self.notify("Could not save this passage. Please try again."); return }
-                self.readerWebView?.evaluateJavaScript("window.readerApplyHighlightText && window.readerApplyHighlightText(\(Self.javascriptString(text)))",completionHandler:nil)
+                self.readerWebView?.evaluateJavaScript("window.readerApplyHighlightText&&window.readerApplyHighlightText(\(Self.javascriptString(text)));window.getSelection()?.removeAllRanges();window.readerSelectionDismiss?.();",completionHandler:nil)
+                if body["exportNotes"] as? Bool == true,let saved=result["item"] as? [String:Any],let id=saved["id"] as? String { self.exportHighlightsToNotes(["ids":[id]]) }
                 self.send("annotationData",result)
                 self.notify("Highlight saved locally. Enabled destinations will sync from the queue.")
                 self.annotationMaintenance()
@@ -1808,6 +1944,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func annotationRequest(_ body:[String:Any]) {
         let action=body["action"] as? String ?? "list"
+        if action == "appleNotes" { exportHighlightsToNotes(body);return }
         if action == "importReadwise" {
             guard !readwiseImportInProgress else { return }
             readwiseImportInProgress=true
@@ -2040,6 +2177,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func syncReaderProgress(_ incoming:[String:Any]) {
         if activeReader?["kind"] as? String == "article",let identifier=activeReader?["articleId"] as? Int {
+            guard incoming["document"] as? String == activeReader?["document"] as? String else { return }
             let percentage=(incoming["percentage"] as? NSNumber)?.doubleValue ?? 0
             articleQueue.async { [weak self] in
                 guard let self else { return }

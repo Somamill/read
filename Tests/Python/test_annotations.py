@@ -24,6 +24,13 @@ class AnnotationTests(unittest.TestCase):
     def add(self,**changes):
         return self.lib.put({'title':'Book','author':'Writer','text':'A passage','bookId':7,'source':'Shelf',**changes})[0]
 
+    def test_daily_review_includes_local_book_and_article_passages(self):
+        self.lib.save_settings({'reviewSize':2})
+        book=self.add(text='A passage from a book',sourceId='book')
+        article=self.add(text='A passage from an article',bookId=0,source='read. articles',sourceId='article')
+        for i in range(8):self.add(text='An imported passage '+str(i),bookId=0,source='Readwise',sourceId=str(i))
+        self.assertEqual({x['id'] for x in self.lib.review()},{book['id'],article['id']})
+
     def test_persistent_notes_favorites_search_and_private_permissions(self):
         item=self.add(); self.lib.update(item['id'],{'note':'remember this','tags':['日本語','research'],'favorite':True})
         other=annotations.Library(self.path)

@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync('Sources/ReadMacApp/AppMain.swift','utf8');
 const code=source.slice(source.indexOf('function layoutPages(){'),source.indexOf('\n              function chapterIndex()'));
 test('font/layout changes preserve saved progress instead of an obsolete page number',()=>{
- const context={readerViewport:{scrollLeft:0},readerFlow:{style:{},scrollWidth:730*1000},step:()=>1000,pageCount:200,currentPage:8,userHasNavigated:false,window:{readerBook:{resumePercentage:.0382}}};
+ const context={readerViewport:{scrollLeft:0},readerFlow:{style:{setProperty(){}},scrollWidth:730*1000},step:()=>1000,pageCount:200,currentPage:8,userHasNavigated:false,window:{readerBook:{resumePercentage:.0382}}};
  vm.createContext(context);vm.runInContext(code+';layoutPages()',context);
  assert.equal(context.pageCount,730);assert.equal(context.currentPage,28);assert.equal(context.readerViewport.scrollLeft,28000);
  context.userHasNavigated=true;context.currentPage=29;context.readerFlow.scrollWidth=1000*1000;
