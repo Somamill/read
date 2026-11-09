@@ -43,28 +43,30 @@ private final class ReaderOverlayView:NSView {
     weak var controls:NSView?
     var canHide:(()->Bool)?
     private var monitor:Any?
-    private var timer:Timer?
+    private var fadeTask:DispatchWorkItem?
     private var lastTimerReset=Date.distantPast
+    private var pointerOverControls=false
+    func beginReading(){reveal()}
     override func hitTest(_ point:NSPoint)->NSView? {let hit=super.hitTest(point);return hit === self ? nil : hit}
     override func viewDidMoveToWindow(){
         super.viewDidMoveToWindow()
-        if let monitor{NSEvent.removeMonitor(monitor);self.monitor=nil};timer?.invalidate()
+        if let monitor{NSEvent.removeMonitor(monitor);self.monitor=nil};fadeTask?.cancel()
         guard let window else{return};window.acceptsMouseMovedEvents=true
         monitor=NSEvent.addLocalMonitorForEvents(matching:[.mouseMoved,.leftMouseDown,.keyDown,.scrollWheel]){[weak self] event in
             guard let self,event.window === self.window else{return event}
+            if event.type == .mouseMoved,let controls=self.controls{self.pointerOverControls=controls.frame.insetBy(dx:-18,dy:-18).contains(self.convert(event.locationInWindow,from:nil))}
             if event.type != .scrollWheel {self.reveal()}
             else {self.scheduleFade()}
             return event
         };reveal()
     }
-    private func scheduleFade(){if timer?.isValid == true && Date().timeIntervalSince(lastTimerReset)<0.25{return};lastTimerReset=Date();timer?.invalidate();timer=Timer.scheduledTimer(withTimeInterval:3.2,repeats:false){[weak self] _ in
-        guard let self,let controls=self.controls,self.window != nil,self.canHide?() != false,!NSWorkspace.shared.isVoiceOverEnabled else{return}
-        let pointer=self.convert(self.window!.mouseLocationOutsideOfEventStream,from:nil)
-        if controls.frame.insetBy(dx:-18,dy:-18).contains(pointer){self.scheduleFade();return}
+    private func scheduleFade(){if fadeTask != nil && Date().timeIntervalSince(lastTimerReset)<0.25{return};lastTimerReset=Date();fadeTask?.cancel();fadeTask=DispatchWorkItem{[weak self] in
+        guard let self,let controls=self.controls,self.window != nil,!NSWorkspace.shared.isVoiceOverEnabled else{return}
+        if self.pointerOverControls || self.canHide?() == false{self.scheduleFade();return}
         NSAnimationContext.runAnimationGroup{context in context.duration=NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.4;controls.animator().alphaValue=0}
-    }}
+    };if let fadeTask{DispatchQueue.main.asyncAfter(deadline:.now()+3.2,execute:fadeTask)}}
     private func reveal(){if (controls?.alphaValue ?? 0)<0.99 {NSAnimationContext.runAnimationGroup{context in context.duration=NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.18;controls?.animator().alphaValue=1}};scheduleFade()}
-    deinit{timer?.invalidate();if let monitor{NSEvent.removeMonitor(monitor)}}
+    deinit{fadeTask?.cancel();if let monitor{NSEvent.removeMonitor(monitor)}}
 }
 
 /// Machine-specific paths and service addresses live outside the public source tree.
@@ -1431,6 +1433,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         window.contentView=container; window.title="\(title) · read."; window.minSize=NSSize(width:720,height:520)
         window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps:true)
         window.makeFirstResponder(web)
+        (toolbar as? ReaderOverlayView)?.beginReading()
         if let old=readerKeyMonitor { NSEvent.removeMonitor(old) }
         readerKeyMonitor=NSEvent.addLocalMonitorForEvents(matching:.keyDown) { [weak self] event in
             guard let self,self.activeReader != nil,NSApp.keyWindow === self.window,
