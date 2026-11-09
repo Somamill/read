@@ -1,23 +1,30 @@
-# read.
+![read. — a free, open-source macOS reader for EPUB books, offline articles, RSS feeds and highlights](Documentation/Brand/read-hero.jpg)
 
-**A calm, unified reading dashboard for macOS.** read. brings your Calibre library, reading progress, connected services, and supported devices into one place while keeping your book files under your control.
+# read. — Books, articles & highlights for macOS
 
-<p align="center">
-  <img src="Resources/Icons/AppIcon.png" width="96" alt="read. app icon">
-</p>
+**A free, open-source EPUB reader and read-it-later app for macOS.** Save articles offline, follow RSS feeds, highlight passages and bring your Calibre library into one calm reading space. Optional connections include KOReader, CrossPoint, Hardcover, Readwise and Apple Books.
 
-> Current version: **0.2.1** · macOS · MIT licensed
+[![Latest release](https://img.shields.io/github/v/release/Somamill/read?style=flat-square&color=2879d0)](https://github.com/Somamill/read/releases/latest)
+[![Build and validate](https://github.com/Somamill/read/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Somamill/read/actions/workflows/ci.yml)
+[![MIT license](https://img.shields.io/badge/license-MIT-555?style=flat-square)](LICENSE)
+[![macOS 14 or later](https://img.shields.io/badge/macOS-14%2B-555?style=flat-square)](Documentation/DEPENDENCIES.md)
 
-[Article reading, feeds, privacy, and limits](Documentation/ARTICLES.md)
+[**Download for Mac**](https://github.com/Somamill/read/releases/latest) · [See the features](#what-read-does) · [Installation](#install-and-build) · [Documentation](Documentation/ARTICLES.md) · [Contribute](CONTRIBUTING.md)
+
+Start with local articles and highlights: **no account, subscription, Xcode or separate Python installation required.** Calibre and connected services are optional dependencies for their respective features. Releases currently use the unsigned community distribution path described below.
 
 ## What read. does
+
+![Books, Articles & RSS, and Highlights — an editorial illustration of read.’s three core reading workflows](Documentation/Brand/read-features.jpg)
+
+*Promotional artwork, not an app screenshot.*
 
 - **Articles, freely.** Save a URL into a local reading inbox, read its text offline, highlight and annotate in the paginated reader, and export your collection as Markdown. No account or subscription required.
 - **Feeds and a weekly pause.** Follow RSS/Atom sources, search full article text, organize Inbox/Later/Finished with tags and stars, and choose a weekly selection from your own saved stories. Listen using macOS system speech.
 
 
 - **One shelf across sources.** Browse Calibre titles and formats alongside reading records from Apple Books, Hardcover, and connected readers. Matching uses title and author evidence so different editions can share one shelf entry.
-- **Covers and metadata.** Loads embedded Calibre covers, then checks high-confidence Open Library results for missing artwork and saves successful matches back into Calibre. If no reliable cover is available, read. shows a readable title card instead of an empty image box. A read-only library health summary points out missing covers, authors, formats, and likely duplicate records.
+- **Covers and metadata.** Loads embedded Calibre covers, then checks high-confidence Open Library results for missing artwork and saves successful matches back into Calibre. If no reliable cover is available, read. shows a readable title card instead of an empty image box.
 - **Read and track.** Open EPUBs in the built-in paginated reader, keep progress and highlights, and view finish status and reading statistics.
 - **Highlights and review.** Search passages across sources, edit notes and tags, save collections, review highlights, and export Markdown/CSV/JSON. Imports, annotation backups, and an optional upload queue keep the workflow local until you enable a destination. See [Highlights guide](Documentation/HIGHLIGHTS.md).
 - **Reading Studio.** Recognize text from images/PDFs locally, transcribe downloaded audio, ask cited questions of your highlights, and export snapshots directly to Notion. External uploads require explicit action. See [Studio setup and limits](Documentation/STUDIO.md).
@@ -25,9 +32,9 @@
 - **Device setup.** Configure supported KOReader/CrossPoint readers and see when a reader last sent progress. A disconnected reader can only upload after it reconnects to Wi-Fi.
 - **A focused interface.** Choose Black (OLED black) or Bright. Motion follows macOS reduced-motion settings and uses native WebKit timing at the display’s supported refresh rate.
 
-### read. in action
+### Interface showcase
 
-These showcase images use illustrative sample books and connection states. They do not contain a personal library, account details, or local network addresses.
+These earlier demo interface images use illustrative sample books and connection states. They show the project’s reading workflows, not an exact screenshot of the current release. No personal library, account details or local network addresses are included.
 
 | Bookshelf and EPUB import | Connected reading services | Reading statistics |
 | --- | --- | --- |
@@ -53,11 +60,11 @@ Updater-enabled releases can check, download, and install signed updates from in
 
 ### Build from source
 
-Requirements: macOS 14 or later, Xcode, Python 3, and a local Calibre library.
+See [Dependencies](Documentation/DEPENDENCIES.md) for source-build tools. A local Calibre library is optional; articles and highlights can be used independently.
 
 ```sh
 git clone https://github.com/Somamill/read.git
-cd read.
+cd read
 Scripts/build-and-install.sh
 ```
 
@@ -65,7 +72,7 @@ To package a locally built app for testing, run `Scripts/package-dmg.sh /Applica
 
 ## Set up your reading sources
 
-1. Choose a local Calibre library and a folder for incoming books.
+1. Choose **Start reading** for local articles and highlights, or select an existing Calibre library and incoming-books folder.
 2. Add the services and devices you use under **Connections** and **Setup**.
 3. Keep Calibre’s active library on local storage. Use iCloud Drive, OneDrive, or Google Drive only for incoming files that their official sync app downloads to this Mac. Do not sync Calibre’s live database folder through a cloud drive.
 4. On CrossPoint/KOReader devices, enable document metadata and sync when the reader is back online. read. processes a reader upload automatically; it cannot make a disconnected device upload over Wi-Fi.
