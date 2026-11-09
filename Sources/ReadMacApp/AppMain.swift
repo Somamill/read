@@ -1493,11 +1493,15 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let dock=NSVisualEffectView(frame:.zero); dock.translatesAutoresizingMaskIntoConstraints=false; dock.material = .hudWindow; dock.blendingMode = .withinWindow; dock.state = .active
         dock.wantsLayer=true; dock.layer?.cornerRadius=20; dock.layer?.masksToBounds=true; dock.layer?.borderWidth=1; dock.layer?.borderColor=NSColor.separatorColor.withAlphaComponent(0.28).cgColor
         let surface:NSView
-        #if compiler(>=6.2)
-        if #available(macOS 26.0,*){let glass=NSGlassEffectView();glass.style = .clear;glass.cornerRadius=22;glass.contentView=bottom;surface=glass}else{dock.addSubview(bottom);surface=dock}
-        #else
-        dock.addSubview(bottom);surface=dock
-        #endif
+        // Resolve the public AppKit class at runtime so builds made with an older
+        // Xcode still use native Liquid Glass when running on macOS 26 or later.
+        if #available(macOS 26.0,*),let glassType=NSClassFromString("NSGlassEffectView") as? NSView.Type {
+            let glass=glassType.init(frame:.zero)
+            glass.setValue(NSNumber(value:1),forKey:"style") // NSGlassEffectView.Style.clear
+            glass.setValue(NSNumber(value:22),forKey:"cornerRadius")
+            glass.setValue(bottom,forKey:"contentView")
+            surface=glass
+        }else{dock.addSubview(bottom);surface=dock}
         surface.translatesAutoresizingMaskIntoConstraints=false
         toolbar.addSubview(surface);toolbar.controls=surface;toolbar.canHide={ [weak self] in self?.readerSettingsPopover?.isShown != true && self?.readerContentsPopover?.isShown != true }
         if isArticle{
