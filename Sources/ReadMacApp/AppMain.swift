@@ -404,6 +404,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         if message.name == "reader", let body=message.body as? [String:Any] {
+            guard message.webView === readerWebView else { return }
             switch body["type"] as? String {
             case "link":
                 if let url=body["url"] as? String { openReaderLink(url,title:body["title"] as? String ?? "") }
@@ -412,9 +413,9 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             case "highlight":
                 syncReaderHighlight(body)
             case "chapters":
-                DispatchQueue.main.async { self.updateReaderChapters(body["chapters"] as? [[String:Any]] ?? []) }
+                self.updateReaderChapters(body["chapters"] as? [[String:Any]] ?? [])
             case "position":
-                DispatchQueue.main.async { self.updateReaderPosition(body) }
+                self.updateReaderPosition(body)
             case "highlightError":
                 DispatchQueue.main.async { self.notify(body["message"] as? String ?? "Select a passage first, then choose Highlight.") }
             default: break

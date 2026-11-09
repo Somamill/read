@@ -1,4 +1,5 @@
 ## 0.3.2
+- Ignore delayed messages from a previous reader after switching documents, protecting the active book or article position.
 - Let the floating reader controls fade smoothly during reading, with native clear Liquid Glass on macOS 26 and a material fallback on earlier systems; respect Reduce Motion and VoiceOver.
 - Choose automatic pages, one page, two pages, or continuous scrolling while retaining reading progress.
 - Simplify articles by hiding chapter controls and adding previous/next article navigation within their source.
