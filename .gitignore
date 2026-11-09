@@ -36,3 +36,7 @@ backups/
 state/
 
 node_modules/
+
+# Obsolete local Xcode workspaces are not release inputs.
+/Shelf*.xcodeproj/
+**/project.xcworkspace/xcshareddata/

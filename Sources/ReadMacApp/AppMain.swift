@@ -531,24 +531,22 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     /// Finish the common first-run path with local defaults; optional services can be linked later.
     private func autoSetup() {
-        guard let detected = detectedLibraryPath else {
-            send("setupAutoResult", ["ok": false, "message": "Shelf couldn’t find a Calibre library. Choose the folder containing metadata.db, then use Finish setup."])
-            return
-        }
+        let detected = detectedLibraryPath
         do {
             let incoming = URL(fileURLWithPath: importPath, isDirectory: true)
             try FileManager.default.createDirectory(at: incoming, withIntermediateDirectories: true)
-            try configuration.set("paths.library", detected)
+            if let detected {try configuration.set("paths.library", detected)}
+            if !configuration.bool("connectionsConfigured") {try configuration.set("connections",configuration.strings("connections"));try configuration.set("connectionsConfigured",true)}
             try configuration.set("paths.import", incoming.path)
             try configuration.set("setupCompleted", true)
             if configuration.value("account.username", fallback: "").isEmpty {
                 try configuration.set("account.username", "reader")
             }
-            send("setupAutoResult", ["ok": true, "message": "Setup finished. Shelf found your Calibre library and prepared an incoming-books folder. You can connect optional services later."])
+            send("setupAutoResult", ["ok":true,"localOnly":detected == nil,"message":detected == nil ? "Local reading is ready. Save articles and highlights now; connect your Calibre library and services later." : "Your Calibre library is connected. Optional services can be added later."])
             loadSetup()
             refresh()
         } catch {
-            send("setupAutoResult", ["ok": false, "message": "Shelf couldn’t finish setup: \(error.localizedDescription)"])
+            send("setupAutoResult", ["ok": false, "message": "read. couldn’t finish setup: \(error.localizedDescription)"])
         }
     }
 
@@ -1246,7 +1244,8 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func syncAuthKey() -> String {
         if let saved=localCredential("sync-api-key"),!saved.isEmpty { return saved }
-        return Self.run(dockerPath,["exec","kosync","redis-cli","--raw","-n","1","GET","user:\(username):key"]).output.trimmingCharacters(in:.whitespacesAndNewlines)
+        guard configuration.dictionary("services")["kosyncHealth"] != nil || FileManager.default.fileExists(atPath:"\(statePath)/calibre-server-password") else{return ""}
+        return Self.run(dockerPath,["exec",configuration.value("containers.kosync",fallback:"kosync"),"redis-cli","--raw","-n","1","GET","user:\(username):key"]).output.trimmingCharacters(in:.whitespacesAndNewlines)
     }
 
     private func serverPassword() -> String {
@@ -1594,7 +1593,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
 
     private func updateReaderPosition(_ info:[String:Any]) {
         let percentage=min(1,max(0,(info["percentage"] as? NSNumber)?.doubleValue ?? 0))
-        if info["userNavigated"] as? Bool == true,let reader=activeReader,let document=reader["document"] as? String,
+        if info["userNavigated"] as? Bool == true,let reader=activeReader,reader["kind"] as? String != "article",let document=reader["document"] as? String,
            lastLocalReaderPosition?.document != document || lastLocalReaderPosition?.percentage != percentage {
             var position:[String:Any]=["type":"progress","bookId":reader["bookId"] ?? 0,"document":document,"syncDocuments":reader["syncDocuments"] ?? [document],"percentage":percentage]
             position["metadata"]=["title":reader["title"] ?? "","authors":reader["authors"] ?? "","filename":reader["filename"] ?? "","language":reader["language"] ?? ""]
@@ -2179,8 +2178,12 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         guard !epubs.isEmpty else { notify("Choose one or more EPUB files."); return }
         let inbox=URL(fileURLWithPath:"\(importPath)",isDirectory:true)
         let importerScript="\(scriptsPath)/calibre_icloud_import.sh"
+        let customImporter=FileManager.default.fileExists(atPath:importerScript)
+        let calibreDB=URL(fileURLWithPath:calibreConverter).deletingLastPathComponent().appendingPathComponent("calibredb").path
+        guard customImporter || FileManager.default.isExecutableFile(atPath:calibreDB) else{notify("Install Calibre to import EPUBs into a book library. Articles and highlights work without it.");return}
         DispatchQueue.global(qos:.userInitiated).async { [weak self] in
             var queued=0
+            var queuedFiles=[String]()
             var failures=[String]()
             do { try FileManager.default.createDirectory(at:inbox,withIntermediateDirectories:true) }
             catch { DispatchQueue.main.async { self?.notify("Could not open the configured import folder: \(error.localizedDescription)") }; return }
@@ -2199,10 +2202,16 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
                     try FileManager.default.copyItem(at:source,to:temporary)
                     try FileManager.default.moveItem(at:temporary,to:finalURL)
                     queued += 1
+                    queuedFiles.append(finalURL.path)
                 } catch {
                     try? FileManager.default.removeItem(at:temporary)
                     failures.append("\(source.lastPathComponent): \(error.localizedDescription)")
                 }
+            }
+            if queued > 0, !customImporter,let self {
+                let result=Self.run(calibreDB,["add","--with-library",self.libraryPath,"--automerge","ignore"]+queuedFiles)
+                DispatchQueue.main.async{self.loadBooks();self.notify(result.code == 0 ? "Imported with Calibre · embedded metadata and covers are available in Books." : "Calibre could not complete this import. Your files remain in the import folder; check that the library is available and not locked by another app.")}
+                return
             }
             if queued > 0 {
                 DispatchQueue.main.async { self?.notify("\(queued) EPUB\(queued == 1 ? "" : "s") added to your import folder · configured import jobs are running.") }
@@ -2228,7 +2237,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     }
 
     private func retryPendingReaderProgress() {
-        for record in readerProgressStore.pending().prefix(8) { syncReaderProgress(record) }
+        for record in readerProgressStore.pending().prefix(8) {
+            if (record["bookId"] as? Int ?? 0)<=0 {if let document=record["document"] as? String,let timestamp=record["timestamp"] as? Double{try? readerProgressStore.acknowledge(document:document,timestamp:timestamp)};continue}
+            syncReaderProgress(record)
+        }
     }
 
     private func syncReaderProgress(_ incoming:[String:Any]) {
@@ -2512,7 +2524,13 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             ("xteink","E-reader sync helper","Automation",agent("xteink",fallback:"app.shelf.device-sync"),nil,300,"book.closed.fill","\(logDir)/xteink-sync-configurator.log",nil)
         ]
         var items=[[String:Any]]()
+        let endpointKeys=["calibre":"calibreOpds","caddy":"caddyOpds","kosync":"kosyncHealth","crosspoint":"crosspointHealth","xteink-device":"xteinkStatus"]
+        let configuredServices=configuration.dictionary("services")
         for (id,name,category,label,endpoint,interval,icon,logPath,action) in defs {
+            let explicitEndpoint=endpointKeys[id].flatMap{configuredServices[$0] as? String}.map{!$0.isEmpty} ?? false
+            let existingLog=logPath.map{FileManager.default.fileExists(atPath:$0)} ?? false
+            let installedAgent=label.map{label in ["\(home)/Library/LaunchAgents/\(label).plist","/Library/LaunchAgents/\(label).plist"].contains{FileManager.default.fileExists(atPath:$0)}} ?? false
+            guard explicitEndpoint || existingLog || installedAgent else {continue}
             let agent=label.flatMap { $0.isEmpty ? nil : launchInfo("gui/\(uid)/\($0)") }
             let pid=agent?.pid
             let since=pid.map(processUptime)
@@ -2627,7 +2645,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let ip=Self.capture(#"inet (\d+\.\d+\.\d+\.\d+)"#,ips) ?? "Unavailable"
         let pass=serverPassword()
         let plugin=(try? Data(contentsOf:URL(fileURLWithPath:"\(home)/Library/Preferences/calibre/plugins/KOReader Sync.json"))).flatMap { try? JSONSerialization.jsonObject(with:$0) as? [String:Any] } ?? [:]
-        let redis=Self.run(dockerPath,["exec","kosync","redis-cli","--raw","-n","1","GET","user:\(username):key"]).output.trimmingCharacters(in:.whitespacesAndNewlines)
+        let redis=items.contains(where:{$0["id"] as? String == "kosync"}) ? Self.run(dockerPath,["exec",configuration.value("containers.kosync",fallback:"kosync"),"redis-cli","--raw","-n","1","GET","user:\(username):key"]).output.trimmingCharacters(in:.whitespacesAndNewlines) : ""
         let shared=(md5(pass) == (plugin["progress_sync_password"] as? String ?? "") && md5(pass) == redis)
         let connectorRows=readConnectorStatuses()
         let readerOPDS=service("readerOpds",fallback:"http://\(ip):8080/opds")

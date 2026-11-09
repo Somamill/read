@@ -83,7 +83,7 @@ jobs:
           python3 - <<'PYSMOKE'
           import json,os,pathlib
           root=pathlib.Path(os.environ['RUNNER_TEMP'])/'shelf-smoke'
-          config={'setupCompleted':True,'connectionsConfigured':True,'paths':{k:str(root/v) for k,v in {'booksRoot':'.','library':'library','state':'state','logs':'logs','scripts':'scripts','import':'inbox'}.items()},'tools':{'docker':'/usr/bin/false','adb':'/usr/bin/false','brew':'/usr/bin/false'}}
+          config={'setupCompleted':False,'connectionsConfigured':True,'connections':[],'paths':{k:str(root/v) for k,v in {'booksRoot':'.','library':'library','state':'state','logs':'logs','scripts':'scripts','import':'inbox'}.items()},'tools':{'docker':'/usr/bin/false','adb':'/usr/bin/false','brew':'/usr/bin/false'}}
           (root/'config.json').write_text(json.dumps(config))
           PYSMOKE
           APP_EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")

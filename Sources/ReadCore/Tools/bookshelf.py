@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read the Calibre library's local reading-progress fields without writing to it."""
 
+import hashlib
 import json
 import math
 import sqlite3
@@ -24,9 +25,18 @@ def finished_overrides():
         return set()
 
 
+def local_article_documents():
+    database=UNMATCHED_FILE.parent/'articles'/'articles.sqlite'
+    if not database.is_file():return set()
+    try:
+        with sqlite3.connect(database.as_uri()+'?mode=ro',uri=True,timeout=2) as connection:
+            return {hashlib.md5(url.encode()).hexdigest() for (url,) in connection.execute('SELECT url FROM articles')}
+    except sqlite3.Error:return set()
+
+
 def main():
     if not DB.is_file():
-        raise FileNotFoundError(f'Calibre metadata database not found: {DB}')
+        print(json.dumps({'total':0,'reading':[],'finished':[],'recent':[],'allBooks':[],'unmatchedProgress':[],'reviewProgressMatches':[],'source':'Calibre Library','libraryConfigured':False}));return
     connection = sqlite3.connect(f'file:{DB}?mode=ro', uri=True, timeout=5)
     connection.row_factory = sqlite3.Row
     try:
@@ -35,6 +45,8 @@ def main():
             'SELECT id, label, name FROM custom_columns ORDER BY id'
         ).fetchall()
         custom_expressions = []
+        custom_fields = {}
+        valid_custom_ids = set()
         for column in custom_metadata:
             column_id = int(column['id'])
             table = f'custom_column_{column_id}'
@@ -52,6 +64,8 @@ def main():
                     f'JOIN {table} cm ON cm.id=ln.value WHERE ln.book=b.id)'
                 )
             custom_expressions.append(f'{expression} AS custom_{column_id}')
+            custom_fields[column['label']] = expression
+            valid_custom_ids.add(column_id)
         custom_select = ',\n'.join(custom_expressions)
         custom_prefix = f'{custom_select},\n                   ' if custom_select else ''
         rows = connection.execute('''
@@ -80,11 +94,11 @@ def main():
                    c.text AS comments, b.pubdate, b.series_index,
                    (SELECT group_concat(d.format, ',') FROM data d WHERE d.book=b.id) AS formats
               FROM books b
-              LEFT JOIN custom_column_1 p ON p.book=b.id
-              LEFT JOIN custom_column_4 done ON done.book=b.id
+
+
               LEFT JOIN comments c ON c.book=b.id
               ORDER BY datetime(b.timestamp) DESC, b.id DESC
-        '''.replace('SELECT b.id,', f'SELECT {custom_prefix}b.id,', 1)).fetchall()
+        '''.replace('SELECT b.id,', f'SELECT {custom_prefix}b.id,', 1).replace('p.value AS progress',custom_fields.get('ko_progfloat','NULL')+' AS progress').replace('done.value AS device_finished',custom_fields.get('ko_statusbool','NULL')+' AS device_finished')).fetchall()
     finally:
         connection.close()
 
@@ -127,7 +141,8 @@ def main():
             'customMetadata': [
                 {'label': column['name'], 'value': str(row[f'custom_{int(column["id"])}'])}
                 for column in custom_metadata
-                if row[f'custom_{int(column["id"])}'] is not None
+                if int(column['id']) in valid_custom_ids
+                and row[f'custom_{int(column["id"])}'] is not None
                 and str(row[f'custom_{int(column["id"])}']).strip()
             ],
             'progress': progress,
@@ -161,6 +176,9 @@ def main():
         unmatched = []
         review_matches = []
 
+    article_documents=local_article_documents()
+    unmatched=[x for x in unmatched if x.get('document') not in article_documents]
+    review_matches=[x for x in review_matches if x.get('document') not in article_documents]
     print(json.dumps({
         'total': total,
         'reading': sorted(reading, key=lambda b: b['progress'] or 0, reverse=True),
