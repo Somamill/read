@@ -59,6 +59,7 @@ result={'version':1,'settings':{'opds':opds,'sync':sync,'username':username,'rea
 # Snapshot saved annotations read-only; private data stays inside the encrypted handoff.
 annotation_path=home/'Library/Application Support/Shelf/annotations.sqlite'
 result['highlights']=[]
+result['catalog']['metadataVersion']=2
 if annotation_path.exists():
  db=sqlite3.connect(annotation_path.resolve().as_uri()+'?mode=ro',uri=True,timeout=5)
  try:

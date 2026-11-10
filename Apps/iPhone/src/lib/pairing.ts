@@ -86,7 +86,11 @@ export async function importMacSetup(
   records.push({
     kind: "calibreCursor",
     id: cursor,
-    value: { id: cursor, checked: Date.now() },
+    value: {
+      id: cursor,
+      checked: Date.now(),
+      metadataVersion: profile.catalog.metadataVersion || 1,
+    },
   });
   onProgress("Preparing your highlights and review history…");
   const existing = await list<Highlight>("highlight");
