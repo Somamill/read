@@ -1,3 +1,9 @@
+## iPhone preview 0.1.1
+- Publish an Expo-hosted iOS preview under @somamill/read-mobile, removing the need to keep the Mac development server running for app access.
+- Link a stable iphone-preview channel and use the SDK 58 runtime policy compatible with Expo Go.
+- Add the Expo Updates dependency and a repeatable publish:preview command; document computer versus iPhone login and the remaining server-side sync dependencies.
+- Keep personal service credentials and library content out of the hosted app bundle.
+
 ## iPhone preview 0.1.0 (Expo SDK 58)
 - Add a separate React Native/Expo Router iPhone app with local SQLite storage and secure credentials, without requiring Apple Developer enrollment for Expo Go.
 - Support EPUB/PDF/audio import through Files, paged or scrolling reading, publisher chapter navigation, Unicode metadata, local highlights, notes, review and sharing.

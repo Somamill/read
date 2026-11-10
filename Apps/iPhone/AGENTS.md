@@ -39,3 +39,7 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Hosted iPhone preview releases
+
+The official Expo project is `@somamill/read-mobile`; its `iphone-preview` channel points to the branch of the same name. After validated mobile changes, use `npm run publish:preview -- --message "<release description>"` when the user asks to publish/update the mobile preview. Preserve the SDK-compatible runtime policy while targeting Expo Go. Do not copy a local Expo session token into GitHub, source files or app configuration. See `Documentation/IPHONE.md` at the repository root for release and platform limits.

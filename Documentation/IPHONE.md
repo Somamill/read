@@ -1,27 +1,32 @@
 # read. for iPhone — Expo Go preview
 
-The iPhone app lives in [`Apps/iPhone`](../Apps/iPhone). Version **0.1.0** targets **Expo SDK 58**, including Expo Go client **58.0.5**. It is a React Native app with native tab navigation, a local SQLite library, secure credential storage and a WebView reading engine. It does not embed the Mac dashboard or require a Mac account to start reading.
+The iPhone app lives in [`Apps/iPhone`](../Apps/iPhone). Version **0.1.1** targets **Expo SDK 58**, including Expo Go client **58.0.5**. It is a React Native app with native tab navigation, a local SQLite library, secure credential storage and a WebView reading engine. It does not embed the Mac dashboard or require a Mac account to start reading.
 
 This is an initial mobile preview, not complete macOS feature parity. You do **not** need Xcode, an Apple Developer membership or an IPA to use it in Expo Go.
 
-## Open on an iPhone
+## Open the hosted preview on an iPhone
 
-1. Install Expo Go with SDK 58 support from the App Store.
-2. On the computer hosting the preview, install Node.js 22.13+ (or Node 24 LTS), then run:
+[**Open read. in Expo Go**](exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview)
 
-   ```sh
-   git clone https://github.com/Somamill/read.git
-   cd read/Apps/iPhone
-   npm ci
-   npx expo start --go
-   ```
+Open this link on an iPhone with **Expo Go SDK 58**. The `iphone-preview` channel loads the latest compatible preview published to that channel. Expo hosts the app code and assets: your Mac does **not** need to remain running to open this preview. Downloaded books and local article text remain on the phone.
 
-3. Keep the computer and iPhone on the same Wi-Fi. Scan the QR code with the iPhone Camera and choose **Open in Expo Go**. Allow local-network access when iOS asks.
-4. Import an EPUB/PDF/audiobook from **Books → Import from Files**, or save a public URL under **Articles**. No account is needed for local reading.
+The hosted project is [@somamill/read-mobile](https://expo.dev/accounts/somamill/projects/read-mobile). Developer publishing uses an Expo account; it does not require Apple signing. Existing Calibre/KOSync services still need to be reachable when you synchronize with them. Hosting the app in Expo does not move those servers or your library files to Expo.
 
-If LAN routing blocks the connection, run `npx expo start --go --tunnel ngrok`. The legacy ngrok provider is included for previews without an Expo login. A tunnel is temporary and exposes the development bundle, so do not put secrets in source/configuration. Stop the terminal process when finished. The default Expo tunnel provider requires an Expo login.
+If you previously tried the temporary `exp.direct` link, use the hosted link above instead. Expo Go owns its home-screen icon and lifecycle; read.’s icon appears in the project listing.
 
-A development QR works only while its server and network connection remain available. It is not a permanent download or an App Store release. Expo Go owns its home-screen icon and lifecycle; read.’s icon appears in the project listing.
+### Run a local development preview
+
+Developers can also run their own preview server:
+
+```sh
+git clone https://github.com/Somamill/read.git
+cd read/Apps/iPhone
+npm ci
+npx expo login
+npx expo start --go
+```
+
+Use the same Expo account in Expo CLI and Expo Go. Local development links require their computer to remain running and reachable. If LAN routing is blocked, `npx expo start --go --tunnel ngrok` can provide a temporary development tunnel. Sign-in on the iPhone does not sign in the computer.
 
 ## Connect existing services
 
@@ -59,26 +64,26 @@ Sync runs while read. is open, on foreground activation and approximately once p
 - The JSON export excludes credentials and original PDF/audio binaries. Keep source media separately. A backup restore UI is not implemented yet. Removing Expo Go or clearing project storage can remove the local library.
 - No live account integration or physical iPhone test is claimed by the automated checks; use **Test connections & retry sync** on your own network.
 
-## Publish a persistent Expo preview
+## Publish an update to the hosted preview
 
-An **Expo account** is needed for Expo-hosted updates; an **Apple Developer account is not** needed to preview compatible updates inside Expo Go. This repository contains no Expo account, project ID or access token.
+The official Expo project is configured in `app.json` with public owner/project identifiers. These are not credentials; publishing still requires an authorized Expo account. No API token is committed to this repository.
 
-From `Apps/iPhone`, the project owner can run:
+From `Apps/iPhone`, maintainers can run:
 
 ```sh
 npx eas-cli@latest login
-npx eas-cli@latest init
-npx expo install expo-updates
-npx eas-cli@latest update:configure
+npm ci
+npm run typecheck
+npm run lint
+npm test
+npm run publish:preview -- --message "read. iPhone preview update"
 ```
 
-Review the generated app configuration before publishing. For an Expo Go-only project, use the SDK-compatible runtime policy (`sdkVersion`), not a custom native runtime/fingerprint. Keep all native dependencies compatible with Expo Go SDK 58. Then publish an iOS preview:
+The script publishes iOS updates to the `iphone-preview` branch using the `preview` environment. The channel of the same name points to that branch, so the shared link opens the latest compatible publication. Publish only after validation. Expo Go's preview behavior is not the same as a standalone app's background updater.
 
-```sh
-npx eas-cli@latest update --branch iphone-preview --platform ios --message "read. iPhone 0.1.0"
-```
+Keep `runtimeVersion.policy` set to **sdkVersion** for Expo Go previews and keep native dependencies compatible with Expo Go SDK 58. Do not switch to an app-version/fingerprint runtime while targeting this Expo Go client. Future SDK upgrades need a matching Expo Go client.
 
-Share the Expo dashboard’s preview QR. A standalone iOS/TestFlight/App Store build is a separate release path and requires Apple signing. Do not confuse an EAS development build with an Expo Go preview. See [Expo preview documentation](https://docs.expo.dev/review/share-previews-with-your-team/) and [Expo Updates](https://docs.expo.dev/versions/v58.0.0/sdk/updates/).
+Forks must configure their own Expo project/account before publishing. The official project's identifiers grant no write access. A standalone iOS/TestFlight/App Store build remains a separate release path requiring Apple signing. See [Expo preview documentation](https://docs.expo.dev/review/share-previews-with-your-team/) and [Expo Updates](https://docs.expo.dev/versions/v58.0.0/sdk/updates/).
 
 ## Development checks
 

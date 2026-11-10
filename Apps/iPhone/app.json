@@ -2,7 +2,7 @@
   "expo": {
     "name": "read.",
     "slug": "read-mobile",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "scheme": "read-mobile",
     "orientation": "default",
     "icon": "./assets/read-icon.png",
@@ -23,6 +23,23 @@
     },
     "web": {
       "bundler": "metro"
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "144f24a8-e646-4acd-a3e3-4226538e4c89"
+      }
+    },
+    "owner": "somamill",
+    "updates": {
+      "url": "https://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     }
   }
 }
