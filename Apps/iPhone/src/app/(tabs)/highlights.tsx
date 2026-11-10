@@ -58,7 +58,6 @@ export default function Highlights() {
                       await put("highlight", h.id, {
                         ...h,
                         note: note || "",
-                        exported: false,
                       });
                       await reload();
                     },

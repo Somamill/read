@@ -2,7 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Highlight, Book } from "../src/lib/model";
 import { reviewQueue, reviewedHighlight } from "../src/lib/review";
-import { macHighlight } from "../src/lib/highlight-import";
+import {
+  macHighlight,
+  pendingHighlightExports,
+} from "../src/lib/highlight-import";
 const passage = (id: string, changes: Partial<Highlight> = {}): Highlight => ({
   id,
   bookId: "book",
@@ -92,6 +95,11 @@ test("private Mac highlight import links Calibre identity, keeps notes and the n
   } as Book;
   const h = macHighlight(raw, [book], []);
   assert.equal(h.bookId, book.id);
+  assert.equal(
+    h.exported,
+    true,
+    "mirrored highlights must not be uploaded as new Readwise highlights",
+  );
   assert.equal(h.review!.lastReviewed, 10000);
   const local = {
     ...h,
@@ -110,4 +118,18 @@ test("private Mac highlight import links Calibre identity, keeps notes and the n
     "identical passages at different source locations stay distinct",
   );
   assert.throws(() => macHighlight({ ...raw, text: "" }, [book], []));
+});
+
+test("mirrored passages and edited exported notes cannot be sent as new highlights", () => {
+  const local = passage("new");
+  const mirrored = passage("mirrored", {
+    mirrored: true,
+    exported: false,
+    note: "Edited on iPhone",
+  });
+  const sent = passage("sent", { exported: true });
+  assert.deepEqual(
+    pendingHighlightExports([local, mirrored, sent]).map((h) => h.id),
+    ["new"],
+  );
 });

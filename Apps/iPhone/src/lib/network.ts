@@ -1,3 +1,4 @@
+import { pendingHighlightExports } from "./highlight-import";
 import { digestAuthorization } from "./auth";
 import {
   Book,
@@ -169,7 +170,7 @@ export async function flush(s: Settings) {
 export async function sendReadwise(highlights: Highlight[]) {
   const token = await secret("readwise");
   if (!token) throw new Error("Connect Readwise first.");
-  const pending = highlights.filter((h) => !h.exported).slice(0, 100);
+  const pending = pendingHighlightExports(highlights).slice(0, 100);
   if (!pending.length) return 0;
   await request("https://readwise.io/api/v2/highlights/", {
     method: "POST",

@@ -1,3 +1,7 @@
+## iPhone preview 0.1.4
+- Treat highlights transferred from the Mac as mirrored passages, preventing the iPhone’s “Send new highlights to Readwise” action from uploading those existing passages again.
+- Keep their notes, offline review and sharing available; new highlights created on the iPhone remain eligible for explicit Readwise export.
+
 ## 0.3.4 / iPhone preview 0.1.3
 - Add a focused, offline daily highlights review on Mac and iPhone, with persistent daily goals, one passage at a time and tomorrow/week/month scheduling.
 - Keep completed reviews completed after reopening, avoid duplicate review clicks and schedule returns at local midnight.
