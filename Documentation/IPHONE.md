@@ -38,7 +38,7 @@ Connections start empty on every installation. No developer passwords, private I
 
 `127.0.0.1` on an iPhone refers to the phone, not your Mac. Use the server’s reachable LAN address, working hostname or trusted HTTPS endpoint. If you are away from home, your private services need an existing VPN or secure remote endpoint; the Expo preview tunnel does not expose or proxy those services. Do not put passwords in URLs.
 
-Sync runs while read. is open, on foreground activation and approximately once per minute. Reader library refreshes are spaced five minutes apart and fetch at most 20 records per cycle. Large libraries arrive progressively. Expo Go/iOS can suspend the app; it cannot promise always-running background synchronization. A newer remote position wins over an older queued edit, including intentional rewinds. Articles never enter the EPUB KOSync queue. Different editions cannot be identified safely from an opaque hash alone.
+Sync runs while read. is open, on foreground activation and approximately once per minute. Reader library refreshes are spaced five minutes apart after the initial paginated import; a pending page is fetched on the next foreground cycle, with at most 20 records per cycle. Large libraries arrive progressively. Expo Go/iOS can suspend the app; it cannot promise always-running background synchronization. A newer remote position wins over an older queued edit, including intentional rewinds. Articles never enter the EPUB KOSync queue. Different editions cannot be identified safely from an opaque hash alone.
 
 ## Included reading features
 
@@ -68,6 +68,7 @@ From `Apps/iPhone`, the project owner can run:
 ```sh
 npx eas-cli@latest login
 npx eas-cli@latest init
+npx expo install expo-updates
 npx eas-cli@latest update:configure
 ```
 

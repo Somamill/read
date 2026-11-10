@@ -81,9 +81,12 @@ export default function Connections() {
       }
     if (next.sync)
       try {
-        await request(next.sync + "/healthcheck", {
+        const auth = await request(next.sync + "/users/auth", {
           headers: await syncHeaders(next),
         });
+        const user = await auth.json();
+        if (user.username !== next.username)
+          throw new Error("The server did not confirm this sync account.");
         await flush(next);
         results.push("KOReader sync: healthy; pending positions retried");
       } catch (e) {

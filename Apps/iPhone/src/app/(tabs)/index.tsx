@@ -46,7 +46,7 @@ export default function Books() {
   const open = async (b: Book) => {
     if (settings.sync && b.document) {
       try {
-        const remote = await remoteProgress(b, settings);
+        const remote = await remoteProgress(b, settings, 1500);
         const pending = (await storage.list<any>("pending")).find(
           (x) => x.document === b.document,
         );

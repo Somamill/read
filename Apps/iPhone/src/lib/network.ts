@@ -1,5 +1,13 @@
 import { digestAuthorization } from "./auth";
-import { Book, Highlight, Pending, Settings, webURL, progress } from "./model";
+import {
+  Book,
+  Highlight,
+  Pending,
+  Settings,
+  webURL,
+  progress,
+  serverPosition,
+} from "./model";
 import { secret, list, put, remove } from "./storage";
 import { md5 } from "js-md5";
 import { fromByteArray } from "base64-js";
@@ -74,13 +82,14 @@ export async function syncHeaders(s: Settings) {
     "x-auth-key": md5(password),
   };
 }
-export async function remoteProgress(book: Book, s: Settings) {
+export async function remoteProgress(book: Book, s: Settings, timeout = 25000) {
   if (!book.document || book.kind === "article" || !s.sync) return;
   const r = await request(
     s.sync.replace(/\/$/, "") + "/syncs/progress/" + book.document,
     { headers: await syncHeaders(s) },
+    timeout,
   );
-  return (await r.json()) as { percentage: number; timestamp: number };
+  return serverPosition(await r.json());
 }
 export async function queueProgress(book: Book, s: Settings) {
   if (book.kind === "article" || !book.document) return;
@@ -102,23 +111,27 @@ export async function flush(s: Settings) {
       const headers = await syncHeaders(s);
       let newer = false;
       try {
-        const remote = await (
-          await request(
-            s.sync.replace(/\/$/, "") + "/syncs/progress/" + item.document,
-            { headers },
-          )
-        ).json();
+        const remote = serverPosition(
+          await (
+            await request(
+              s.sync.replace(/\/$/, "") + "/syncs/progress/" + item.document,
+              { headers },
+            )
+          ).json(),
+        );
         newer = Number(remote.timestamp) > item.timestamp;
       } catch (error) {
         if (!String(error).includes("404")) throw error;
       }
       if (newer) {
-        const remote = await (
-          await request(
-            s.sync.replace(/\/$/, "") + "/syncs/progress/" + item.document,
-            { headers },
-          )
-        ).json();
+        const remote = serverPosition(
+          await (
+            await request(
+              s.sync.replace(/\/$/, "") + "/syncs/progress/" + item.document,
+              { headers },
+            )
+          ).json(),
+        );
         for (const b of await list<Book>("book"))
           if (b.document === item.document) {
             const value = progress(Number(remote.percentage));

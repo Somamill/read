@@ -77,13 +77,23 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
       if (running) return;
       running = true;
       try {
-        await flush(settings);
-        const changes = await pullProgress(settings);
-        for (const changed of changes) await queueReader(changed, settings);
-        await syncReader(settings);
+        const errors: string[] = [];
+        try {
+          await flush(settings);
+          const changes = await pullProgress(settings);
+          for (const changed of changes) await queueReader(changed, settings);
+        } catch (e) {
+          errors.push("KOReader: " + (e as Error).message);
+        }
+        try {
+          await syncReader(settings);
+        } catch (e) {
+          errors.push("Readwise Reader: " + (e as Error).message);
+        }
         if (active) {
           await reload();
-          setError((old) => (old.startsWith("Progress sync:") ? "" : old));
+          if (errors.length) report("Progress sync: " + errors.join(" · "));
+          else setError((old) => (old.startsWith("Progress sync:") ? "" : old));
         }
       } catch (e) {
         if (active) report("Progress sync: " + (e as Error).message);

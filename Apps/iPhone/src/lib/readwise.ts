@@ -86,7 +86,8 @@ export async function syncReader(s: Settings, force = false) {
     const state = (await list<Cursor>("readerCursor")).find(
       (x) => x.id === account,
     ) || { id: account, checked: 0 };
-    if (!force && Date.now() - state.checked < 300000) return;
+    if (!force && Date.now() - state.checked < (state.cursor ? 20000 : 300000))
+      return;
     const started = state.started || new Date().toISOString();
     const url = new URL("https://readwise.io/api/v3/list/");
     url.searchParams.set("withHtmlContent", "false");

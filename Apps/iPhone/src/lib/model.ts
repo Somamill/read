@@ -89,3 +89,23 @@ export const escapeHTML = (s: string) =>
         c
       ]!,
   );
+
+export function serverPosition(value: {
+  percentage: unknown;
+  timestamp: unknown;
+}) {
+  const p = Number(value?.percentage),
+    stamp = Number(value?.timestamp);
+  if (
+    !Number.isFinite(p) ||
+    p < 0 ||
+    p > 1 ||
+    !Number.isFinite(stamp) ||
+    stamp < 0 ||
+    stamp > Date.now() / 1000 + 86400
+  )
+    throw new Error(
+      "The sync server returned an invalid position or timestamp. Check device clocks.",
+    );
+  return { percentage: p, timestamp: stamp };
+}

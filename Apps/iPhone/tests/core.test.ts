@@ -196,3 +196,18 @@ test("exact external book linking keeps one record, progress and reader identity
     "file-hash",
   );
 });
+
+test("invalid server positions cannot silently mark books finished", async () => {
+  const { serverPosition } = await import("../src/lib/model");
+  assert.deepEqual(serverPosition({ percentage: ".4", timestamp: "100" }), {
+    percentage: 0.4,
+    timestamp: 100,
+  });
+  for (const value of [
+    { percentage: 40, timestamp: 100 },
+    { percentage: 0.4, timestamp: "invalid" },
+    { percentage: NaN, timestamp: 100 },
+    { percentage: 0.4, timestamp: Date.now() },
+  ])
+    assert.throws(() => serverPosition(value));
+});
