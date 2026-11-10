@@ -19,7 +19,8 @@ import { webURL } from "../../lib/model";
 export default function Connections() {
   const { settings, saveSettings, error, report, reload } = useRead();
   const [setup, setSetup] = useState(""),
-    [pairing, setPairing] = useState(false);
+    [pairing, setPairing] = useState(false),
+    [setupProgress, setSetupProgress] = useState("");
   const [opds, setOpds] = useState(settings.opds),
     [sync, setSync] = useState(settings.sync),
     [username, setUsername] = useState(settings.username),
@@ -139,17 +140,28 @@ export default function Connections() {
           disabled={pairing || !setup}
           onPress={async () => {
             setPairing(true);
+            setSetupProgress("Starting secure setup…");
             try {
-              const result = await importMacSetup(setup, settings);
+              const result = await importMacSetup(
+                setup,
+                settings,
+                setSetupProgress,
+              );
               await reload();
               setSetup("");
               setOpds(result.settings.opds);
               setSync(result.settings.sync);
               setUsername(result.settings.username);
+              setSetupProgress(
+                "Connected. Open Books or Highlights to continue.",
+              );
               setStatus(
-                `${result.count} Calibre books connected. Service credentials are saved securely.`,
+                `${result.count} Calibre books and ${result.highlights} highlights connected. Service credentials are saved securely.`,
               );
             } catch (e) {
+              setSetupProgress(
+                "Setup did not finish. Your existing library is kept.",
+              );
               report(e);
               Alert.alert("Mac setup", (e as Error).message);
             } finally {
@@ -157,6 +169,7 @@ export default function Connections() {
             }
           }}
         />
+        {!!setupProgress && <Label small>{setupProgress}</Label>}
       </Card>
       <Card>
         <Label>Appearance</Label>

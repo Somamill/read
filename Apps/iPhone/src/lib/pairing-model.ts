@@ -1,10 +1,9 @@
 import { toByteArray, fromByteArray } from "base64-js";
 import { webURL } from "./model";
-export const decode64 = (s: string) =>
-  toByteArray(
-    s.replace(/-/g, "+").replace(/_/g, "/") +
-      "=".repeat((4 - (s.length % 4)) % 4),
-  );
+export const standard64 = (s: string) =>
+  s.replace(/-/g, "+").replace(/_/g, "/") +
+  "=".repeat((4 - (s.length % 4)) % 4);
+export const decode64 = (s: string) => toByteArray(standard64(s));
 export const encode64 = (bytes: Uint8Array) =>
   fromByteArray(bytes)
     .replace(/=/g, "")

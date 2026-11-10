@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import * as SecureStore from "expo-secure-store";
+import { StoredRecord, writeRecords } from "./record-batch";
 import { Book, Highlight, Feed, Pending, Settings, defaults } from "./model";
 let connection: Promise<SQLite.SQLiteDatabase> | undefined;
 async function db() {
@@ -51,6 +52,9 @@ export async function put(kind: string, id: string, value: unknown) {
     id,
     JSON.stringify(value),
   );
+}
+export async function putSetupRecords(rows: StoredRecord[]) {
+  await writeRecords(await db(), rows);
 }
 export async function content(id: string): Promise<string | undefined> {
   const d = await db();
