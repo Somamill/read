@@ -15,7 +15,7 @@ Start with local articles and highlights: **no account, subscription, Xcode or s
 
 ## iPhone preview
 
-An initial iPhone app is available in [Apps/iPhone](Apps/iPhone), targeting **Expo Go SDK 58** (client 58.0.5). Read EPUBs and articles, highlight, follow feeds and connect your own OPDS, KOSync and Readwise services. No Apple Developer membership is needed for the Expo Go preview. See the [setup guide and mobile feature limits](Documentation/IPHONE.md). macOS remains the stable desktop release.
+[**Open the hosted iPhone preview in Expo Go**](exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview). It targets **SDK 58** (including client 58.0.5) and runs without keeping your Mac on. Read EPUBs and articles, highlight, follow feeds and connect your own OPDS, KOSync and Readwise services. Apple Developer membership is unnecessary for this Expo Go preview. See the [setup guide and mobile feature limits](Documentation/IPHONE.md). macOS remains the stable desktop release.
 
 ## What read. does
 
