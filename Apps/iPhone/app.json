@@ -2,7 +2,7 @@
   "expo": {
     "name": "read.",
     "slug": "read-mobile",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "scheme": "read-mobile",
     "orientation": "default",
     "icon": "./assets/read-icon.png",

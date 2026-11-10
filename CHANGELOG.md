@@ -1,3 +1,7 @@
+## iPhone preview 0.1.6
+- Validate the LAN-facing sync address when exporting private Mac setup, preferring the established KOSync listener over CrossPoint’s loopback-only management port.
+- Preserve configured custom sync URLs and existing authentication; no additional network ports are exposed.
+
 ## iPhone preview 0.1.5
 - Read Calibre’s native `#value#` custom-column values so progress and canonical KOReader identifiers survive catalog import; retain compatibility with older normalized snapshots.
 - Check Calibre/OPDS, KOReader/CrossPoint, Readwise and Hardcover independently at the top of Connections without changing reading history.
