@@ -1,15 +1,10 @@
+import { Cover } from "../../components/Cover";
+import { readableFormat } from "../../lib/calibre-model";
 import { useState } from "react";
-import { View, Image, Alert } from "react-native";
+import { View, Alert } from "react-native";
 import { router } from "expo-router";
 import { useRead } from "../../lib/context";
-import {
-  Page,
-  Card,
-  Label,
-  Button,
-  Field,
-  usePalette,
-} from "../../components/UI";
+import { Page, Card, Label, Button, Field } from "../../components/UI";
 import { importFile, importBytes } from "../../lib/importer";
 import { parseOPDS, CatalogEntry } from "../../lib/parsers";
 import { catalogRequest, remoteProgress } from "../../lib/network";
@@ -17,16 +12,15 @@ import { Book, mergeProgress } from "../../lib/model";
 import * as storage from "../../lib/storage";
 export default function Books() {
   const {
-      books,
-      settings,
-      ready,
-      saveSettings,
-      saveBook,
-      saveProgress,
-      reload,
-      report,
-    } = useRead(),
-    p = usePalette();
+    books,
+    settings,
+    ready,
+    saveSettings,
+    saveBook,
+    saveProgress,
+    reload,
+    report,
+  } = useRead();
   const [visible, setVisible] = useState(40);
   const [query, setQuery] = useState(""),
     [catalog, setCatalog] = useState<CatalogEntry[]>([]),
@@ -44,6 +38,42 @@ export default function Books() {
     }
   };
   const open = async (b: Book) => {
+    if (!b.hasContent && !b.html && !b.uri && !b.calibre && !b.readerID) {
+      const imported = await importFile();
+      if (!imported) return;
+      b = await saveBook({
+        ...imported,
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        hardcoverID: b.hardcoverID,
+      });
+    }
+    if (b.calibre && !b.hasContent && !b.html && !b.uri) {
+      const format = readableFormat(b);
+      if (!format)
+        throw new Error(
+          "Import an EPUB or PDF copy to read this Calibre title here.",
+        );
+      const r = await catalogRequest(format.url, settings);
+      if (Number(r.headers.get("content-length") || 0) > 250 * 1024 * 1024)
+        throw new Error("This file exceeds the mobile download limit.");
+      const imported = await importBytes(
+        new Uint8Array(await r.arrayBuffer()),
+        b.title + "." + format.kind,
+        format.mime,
+      );
+      b = await saveBook({
+        ...imported,
+        id: b.id,
+        document: b.document || imported.document,
+        title: b.title,
+        author: b.author,
+        calibre: b.calibre,
+        readerID: b.readerID,
+        cover: imported.cover || b.cover,
+      });
+    }
     if (settings.sync && b.document) {
       try {
         const remote = await remoteProgress(b, settings, 1500);
@@ -76,7 +106,9 @@ export default function Books() {
       b.kind !== "article" &&
       (filter === "all" ||
         (filter === "finished" && b.finished) ||
-        (filter === "reading" && b.progress > 0 && !b.finished)) &&
+        (filter === "reading" &&
+          (b.progress > 0 || b.trackingStatus === "reading") &&
+          !b.finished)) &&
       [b.title, b.author].join(" ").toLowerCase().includes(query.toLowerCase()),
   );
   return (
@@ -125,39 +157,36 @@ export default function Books() {
       {filteredBooks.slice(0, visible).map((b) => (
         <Card key={b.id}>
           <View style={{ flexDirection: "row", gap: 16 }}>
-            {b.cover ? (
-              <Image
-                accessibilityLabel={"Cover of " + b.title}
-                source={{ uri: b.cover }}
-                style={{ width: 78, height: 112, borderRadius: 9 }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: 70,
-                  height: 95,
-                  borderRadius: 9,
-                  backgroundColor: p.bg,
-                  justifyContent: "center",
-                  padding: 8,
-                }}
-              >
-                <Label small>{b.kind.toUpperCase()}</Label>
-              </View>
-            )}
+            <Cover book={b} />
             <View style={{ flex: 1, gap: 7 }}>
               <Label>{b.title}</Label>
               <Label small>{b.author}</Label>
               <Label small>
                 {b.finished
                   ? "Finished"
-                  : Math.round(b.progress * 100) + "% read"}{" "}
-                · Available offline
+                  : b.progressKnown === false
+                    ? "Reading on Hardcover"
+                    : Math.round(b.progress * 100) + "% read"}{" "}
+                ·{" "}
+                {b.hasContent || b.uri
+                  ? "Available offline"
+                  : b.calibre
+                    ? "In Calibre"
+                    : "Connected title"}
               </Label>
             </View>
           </View>
           <Button
-            title={b.progress ? "Continue reading" : "Read"}
+            title={
+              !b.hasContent &&
+              !b.uri &&
+              (!b.calibre || !readableFormat(b)) &&
+              !b.readerID
+                ? "Add a readable copy"
+                : b.progress
+                  ? "Continue reading"
+                  : "Read"
+            }
             onPress={() => run(() => open(b))}
           />
           <Button

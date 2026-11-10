@@ -1,3 +1,5 @@
+import { syncHardcover } from "./hardcover-sync";
+import { syncCalibre } from "./calibre";
 import { linkedBook } from "./matching";
 import { queueReader, syncReader } from "./readwise";
 import React, {
@@ -70,7 +72,14 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [reload, report]);
   useEffect(() => {
-    if (!ready || (!settings.sync && !settings.readerSync)) return;
+    if (
+      !ready ||
+      (!settings.sync &&
+        !settings.readerSync &&
+        !settings.opds &&
+        !settings.onboarded)
+    )
+      return;
     let running = false,
       active = true;
     const sync = async () => {
@@ -78,6 +87,13 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
       running = true;
       try {
         const errors: string[] = [];
+        try {
+          await syncCalibre(settings);
+        } catch (e) {
+          errors.push(
+            "Calibre: cached books remain available; " + (e as Error).message,
+          );
+        }
         try {
           await flush(settings);
           const changes = await pullProgress(settings);
@@ -89,6 +105,11 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
           await syncReader(settings);
         } catch (e) {
           errors.push("Readwise Reader: " + (e as Error).message);
+        }
+        try {
+          await syncHardcover();
+        } catch (e) {
+          errors.push("Hardcover: " + (e as Error).message);
         }
         if (active) {
           await reload();
@@ -142,6 +163,9 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
               ...b,
               progress: value,
               finished: value >= 0.97,
+              progressKnown: true,
+              trackingStatus:
+                value >= 0.97 ? ("finished" as const) : ("reading" as const),
               updated: Date.now(),
             };
           await storage.put("book", id, updated);

@@ -2,7 +2,9 @@ import { useRead } from "../../lib/context";
 import { Page, Card, Label } from "../../components/UI";
 export default function Statistics() {
   const { books, highlights, feeds } = useRead();
-  const reading = books.filter((b) => b.progress > 0 && !b.finished),
+  const reading = books.filter(
+      (b) => (b.progress > 0 || b.trackingStatus === "reading") && !b.finished,
+    ),
     finished = books.filter((b) => b.finished);
   return (
     <Page
@@ -25,6 +27,10 @@ export default function Statistics() {
       <Card>
         <Label>Recently active</Label>
         {[...books]
+          .filter(
+            (b) =>
+              b.progress > 0 || b.finished || b.trackingStatus === "reading",
+          )
           .sort((a, b) => b.updated - a.updated)
           .slice(0, 8)
           .map((b) => (
