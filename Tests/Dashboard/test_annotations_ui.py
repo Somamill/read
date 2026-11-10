@@ -120,8 +120,10 @@ with tempfile.TemporaryDirectory() as tmp:
   assert any(x['source']=='Podcast' for x in lib.items())
   page.locator('[data-page="highlights"]').click()
   page.locator('#annotationSearch').fill('')
+  page.evaluate("showPage('integrations')")
   page.locator('#readwiseImportButton').click()
   page.wait_for_function("annotationState.items.some(x=>x.source==='Readwise'&&x.text==='A passage from Readwise')")
+  page.evaluate("showPage('highlights')")
   page.get_by_text('A passage from Readwise',exact=True).wait_for()
   assert '1 Readwise highlights saved' in page.locator('#readwiseImportStatus').text_content()
   assert page.get_by_role('button',name='Open in Readwise',exact=True).count()==1
