@@ -33,6 +33,12 @@ export type Highlight = {
   created: number;
   exported?: boolean;
   category?: "books" | "articles";
+  author?: string;
+  source?: string;
+  sourceURL?: string;
+  archived?: boolean;
+  frequency?: number;
+  review?: { count: number; lastReviewed: number; nextReview: number };
 };
 export type Settings = {
   theme: "system" | "black" | "bright";
@@ -43,6 +49,7 @@ export type Settings = {
   username: string;
   onboarded: boolean;
   readerSync: boolean;
+  reviewSize?: number;
 };
 export type Feed = {
   url: string;

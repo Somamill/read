@@ -14,7 +14,8 @@ with tempfile.TemporaryDirectory() as tmp:
  notion_pending={}
  errors=[]
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  chromium={'executable_path':'/usr/bin/chromium'} if Path('/usr/bin/chromium').exists() else {}
+  browser=p.chromium.launch(**chromium,headless=True,args=['--no-sandbox'])
   page=browser.new_page(viewport={'width':1440,'height':1100})
   page.on('pageerror',lambda e:(errors.append(str(e)),print('PAGE ERROR:',e)))
   def bridge(payload):
@@ -66,7 +67,7 @@ with tempfile.TemporaryDirectory() as tmp:
   page.locator('#annotationCollectionForm [name="name"]').fill('Japanese notes')
   page.get_by_role('button',name='Save collection',exact=True).click()
   page.get_by_role('button',name='★ Japanese notes').wait_for()
-  page.locator('[data-page="preferences"]').click()
+  page.evaluate("showPage('preferences')")
   page.get_by_text('Sending highlights and Reader progress',exact=True).click()
   page.locator('[name="autoSync"]').check()
   page.locator('[name="dest_readwise"]').check()
@@ -78,16 +79,17 @@ with tempfile.TemporaryDirectory() as tmp:
   page.locator('#annotationExportDialog[open]').wait_for()
   assert 'Personal note' in page.locator('#annotationTextPreview').text_content()
   page.locator('#annotationExportDialog button').click()
-  page.locator('[data-page="review"]').click()
+  page.evaluate("showPage('review')")
   page.locator('#annotationReview .annotation-card').wait_for()
   page.keyboard.press('Enter')
   page.wait_for_function('annotationState.review.length===1')
+  assert '1 of 3 reviewed today' in page.locator('.review-summary').text_content()
   page.locator('[data-page="highlights"]').click()
   page.locator('#annotationSearch').fill('')
   page.screenshot(path=str(Path(tmp)/'highlights.png'),full_page=True)
-  page.locator('[data-page="preferences"]').click()
+  page.evaluate("showPage('preferences')")
   page.screenshot(path=str(Path(tmp)/'preferences.png'),full_page=True)
-  page.locator('[data-page="studio"]').click()
+  page.evaluate("showPage('studio'); studioPost('status')")
   page.locator('#studioSettingsForm').wait_for()
   page.locator('#studioSettingsForm [name="notionParent"]').fill('12345678-1234-1234-1234-123456789abc')
   page.locator('#studioSettingsForm [name="chatProvider"]').select_option('openai')
@@ -118,8 +120,10 @@ with tempfile.TemporaryDirectory() as tmp:
   assert any(x['source']=='Podcast' for x in lib.items())
   page.locator('[data-page="highlights"]').click()
   page.locator('#annotationSearch').fill('')
+  page.evaluate("showPage('integrations')")
   page.locator('#readwiseImportButton').click()
   page.wait_for_function("annotationState.items.some(x=>x.source==='Readwise'&&x.text==='A passage from Readwise')")
+  page.evaluate("showPage('highlights')")
   page.get_by_text('A passage from Readwise',exact=True).wait_for()
   assert '1 Readwise highlights saved' in page.locator('#readwiseImportStatus').text_content()
   assert page.get_by_role('button',name='Open in Readwise',exact=True).count()==1

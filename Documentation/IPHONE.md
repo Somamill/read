@@ -118,3 +118,9 @@ npx expo export --platform ios
 The `iphone-preview` CI job runs dependency validation, lint/type checks, regression tests and an iOS JavaScript/Hermes export. It does not sign an IPA or require Apple credentials. Reader regression tests cover unsafe HTML, highlight restoration, chapter ordering/links, Japanese metadata, sampled document fingerprints, OPDS URLs and Digest authentication.
 
 Shared article extraction and sanitization assets retain their original licenses. To refresh them from the desktop project, run `npm run assets`; this copies the shared sources and notices before generating the mobile script module. Never add personal configuration or library exports to the repository.
+
+### Highlights review
+
+Open **Highlights → Start daily review**. Read one passage, reveal your note, and choose **Tomorrow**, **Next week** or **In a month**. Skipping leaves its schedule unchanged. Choose a daily goal of 3, 5 or 10 passages; the queue stays complete after reopening. Books and articles are included, including short Japanese highlights. Everything works offline.
+
+Private Mac setup also transfers saved highlights and their review schedules. Repeating setup preserves edited notes and the newer review history. This is a setup snapshot: Mac and iPhone review history do not continuously sync with one another. No highlights are bundled into Expo or GitHub.

@@ -17,7 +17,7 @@ export function SetupHandoff() {
         await reload();
         Alert.alert(
           "Your library is connected",
-          `${result.count} Calibre books added. Connections: ${result.services.join(", ")}.`,
+          `${result.count} Calibre books · ${result.highlights} saved highlights. Connections: ${result.services.join(", ")}. Open Highlights → Start daily review to revisit your passages.`,
         );
       } catch (e) {
         report(e);

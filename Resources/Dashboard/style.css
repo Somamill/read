@@ -400,3 +400,10 @@ main{padding-top:40px!important}
 .taskbar-more{align-self:stretch;min-width:56px;border:0;background:transparent;color:var(--ink);font:600 22px system-ui;cursor:pointer;border-radius:16px}.taskbar-more:hover{background:var(--glass-raised)}
 
 #books>.books-hero{display:none!important}#books>.section-head h3,#books #shelfSummary{display:none}#books .section-head{margin-top:8px!important}
+
+/* A focused daily review, using the same palette as the rest of the dashboard. */
+#annotationReview{max-width:860px;margin:0 auto}
+.review-summary{display:grid;gap:10px;margin:20px 0 28px}
+.review-summary p{font-weight:600;margin:0}.review-summary small{color:var(--muted)}
+.review-summary progress{width:100%;height:6px;accent-color:var(--blue)}
+.review-actions{margin-top:20px}.review-actions button{min-height:44px}

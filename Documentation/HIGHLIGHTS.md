@@ -180,3 +180,9 @@ message bridge and verifies the actual embedded reader anchor code. It does not
 replace an AppKit/WebKit build or Mac testing of permissions, deep links, file
 panels, scheduled exports, and live service integrations. The existing macOS CI
 build includes the new Python resource and URL scheme metadata.
+
+## Daily review on Mac and iPhone
+
+Mac: open **Review**. iPhone: open **Highlights → Start daily review**. Revisit a passage and choose **Tomorrow**, **Next week**, or **In a month**. Dates use your device’s local calendar. Skip keeps a passage in the queue without counting it as reviewed. Daily progress survives closing the app, and completing the goal ends the review instead of endlessly refilling it. Change the daily goal in Mac Settings or directly in the iPhone review. Books, articles and short Japanese passages are included.
+
+Review works offline without Readwise. Private iPhone setup can transfer your Mac’s saved highlights and review schedule. This transfers a snapshot; ongoing review history remains local to each device. Re-pairing preserves personal notes and the newer review schedule.

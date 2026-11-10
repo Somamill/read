@@ -5,7 +5,8 @@ import {
   aesDecryptAsync,
   randomUUID,
 } from "expo-crypto";
-import { Settings, Book } from "./model";
+import { Settings, Book, Highlight } from "./model";
+import { macHighlight } from "./highlight-import";
 import { setupLink, decode64, validateProfile } from "./pairing-model";
 import { request } from "./network";
 import { list, put, secret, setSecret } from "./storage";
@@ -78,6 +79,14 @@ export async function importMacSetup(raw: string, current: Settings) {
     id: md5(profile.catalog.base),
     checked: Date.now(),
   });
+  const highlights = await list<Highlight>("highlight");
+  for (const raw of profile.highlights || []) {
+    const h = macHighlight(raw, books, highlights);
+    await put("highlight", h.id, h);
+    const prior = highlights.findIndex((x) => x.id === h.id);
+    if (prior >= 0) highlights[prior] = h;
+    else highlights.push(h);
+  }
   const settings = { ...current, ...profile.settings };
   await put("settings", "profile", settings);
   await request(link.endpoint + "/confirm", {
@@ -89,5 +98,6 @@ export async function importMacSetup(raw: string, current: Settings) {
     settings,
     count: books.filter((b) => b.calibre?.base === profile.catalog.base).length,
     services: profile.services || [],
+    highlights: highlights.length,
   };
 }
