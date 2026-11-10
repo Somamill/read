@@ -19,3 +19,7 @@ Remote reading progress should go through the configured Calibre/KOReader/CrossP
 ## Direct cloud APIs
 
 Provider API connections are intentionally not implemented yet. Google Drive and Microsoft Graph require OAuth app registration, scoped grants, token refresh, conflict handling, retries, and provider-specific upload/download behavior. For now, official desktop sync clients plus a user-picked folder are lower-friction and reuse macOS/iOS File Provider security. A later direct API adapter can be added behind a shared storage protocol after OAuth registration and threat-model review.
+
+## iPhone preview
+
+`Apps/iPhone` is an independent Expo SDK 58/React Native application. Expo Router owns native navigation; SQLite stores books, highlights, feeds and retry queues; SecureStore keeps optional service credentials. The EPUB parser resolves spine/navigation order and the WebView reader sanitizes untrusted content. Shared Readability/DOMPurify/article-extraction assets are copied by `npm run assets`. The mobile app connects to user-configured OPDS/KOSync and public service APIs directly; it does not execute the Mac dashboard’s privileged command bridge. See [iPhone setup and limits](IPHONE.md).

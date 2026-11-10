@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "read.",
+    "slug": "read-mobile",
+    "version": "0.1.0",
+    "scheme": "read-mobile",
+    "orientation": "default",
+    "icon": "./assets/read-icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.github.somamill.read.mobile"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-font",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
