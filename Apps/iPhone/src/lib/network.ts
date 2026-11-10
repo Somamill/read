@@ -72,14 +72,15 @@ export async function catalogRequest(url: string, settings: Settings) {
   });
 }
 export async function syncHeaders(s: Settings) {
-  const password = await secret("syncPassword");
-  if (!s.sync || !s.username || !password)
+  const password = await secret("syncPassword"),
+    key = await secret("syncKey");
+  if (!s.sync || !s.username || (!password && !key))
     throw new Error("Connect your sync server, username and password first.");
   return {
     Accept: "application/vnd.koreader.v1+json",
     "Content-Type": "application/json",
     "x-auth-user": s.username,
-    "x-auth-key": md5(password),
+    "x-auth-key": key || md5(password!),
   };
 }
 export async function remoteProgress(book: Book, s: Settings, timeout = 25000) {
@@ -217,7 +218,10 @@ export async function pullProgress(s: Settings) {
   if (!s.sync) return [];
   const changed: Book[] = [];
   const books = (await list<Book>("book")).filter(
-    (b) => b.document && b.kind === "epub",
+    (b) =>
+      b.document &&
+      b.kind === "epub" &&
+      (b.hasContent || (b.progress > 0 && !b.finished)),
   );
   const pending = await list<Pending>("pending");
   for (const b of books.slice(cursor, cursor + 12)) {

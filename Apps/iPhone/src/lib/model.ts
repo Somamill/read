@@ -11,6 +11,12 @@ export type Book = {
   cover?: string;
   document?: string;
   readerID?: string;
+  hardcoverID?: string;
+  progressKnown?: boolean;
+  progressUpdated?: number;
+  trackingStatus?: "reading" | "finished";
+  identifiers?: Record<string, string>;
+  calibre?: { id: string; base: string; formats: Record<string, string> };
   chapters: { id: string; title: string }[];
   progress: number;
   updated: number;

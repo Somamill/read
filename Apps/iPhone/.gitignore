@@ -44,3 +44,8 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# Private setup artifacts are runtime-only
+*private*setup*
+*profile*.secret.json
+__pycache__/

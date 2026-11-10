@@ -211,3 +211,139 @@ test("invalid server positions cannot silently mark books finished", async () =>
   ])
     assert.throws(() => serverPosition(value));
 });
+
+test("Calibre catalog keeps all formats, Unicode titles, stable UUIDs and bridge progress", async () => {
+  const { calibreBook, mergeCalibre, readableFormat, calibreBase } =
+    await import("../src/lib/calibre-model");
+  const b = calibreBook(
+    "211",
+    {
+      uuid: "uuid-211",
+      title: "日本語の本",
+      authors: ["作家"],
+      timestamp: "2026-01-01",
+      last_modified: "2026-02-01",
+      thumbnail: "/get/thumb/211/library",
+      main_format: { epub: "/get/epub/211/library" },
+      other_formats: { pdf: "/get/pdf/211/library" },
+      user_metadata: {
+        "#ko_md5": { "#value": "a".repeat(32) },
+        "#ko_progfloat": { "#value": 0.44 },
+      },
+    },
+    "https://books.example/",
+  );
+  assert.equal(b.id, "calibre-uuid-211");
+  assert.equal(b.title, "日本語の本");
+  assert.equal(b.progress, 0.44);
+  assert.equal(b.document, "a".repeat(32));
+  assert.equal(readableFormat(b)?.kind, "epub");
+  assert.equal(
+    b.calibre?.formats.pdf,
+    "https://books.example/get/pdf/211/library",
+  );
+  assert.equal(
+    calibreBase("https://books.example/proxy/opds/"),
+    "https://books.example/proxy/",
+  );
+  const newer = {
+    ...b,
+    id: "readwise-one",
+    readerID: "reader-one",
+    progress: 0.7,
+    updated: b.updated + 5000,
+    hasContent: true,
+  };
+  const merged = mergeCalibre(b, newer);
+  assert.equal(merged.id, "readwise-one");
+  assert.equal(merged.progress, 0.7);
+  assert.equal(merged.readerID, "reader-one");
+  assert.equal(merged.hasContent, true);
+});
+test("pairing credentials stay in the fragment and reject unsafe endpoints and malformed grants", async () => {
+  const { setupLink, encode64, validateProfile } =
+    await import("../src/lib/pairing-model");
+  const profile = {
+    v: 1,
+    endpoint: "https://pair.example/pair",
+    token: "A".repeat(43),
+    key: encode64(new Uint8Array(32)),
+  };
+  const url =
+    "exp://u.expo.dev/project?channel-name=iphone-preview#read-setup=" +
+    encode64(new TextEncoder().encode(JSON.stringify(profile)));
+  assert.equal(setupLink(url)?.endpoint, profile.endpoint);
+  assert.ok(!new URL(url).search.includes("token"));
+  assert.equal(setupLink("exp://u.expo.dev/project"), undefined);
+  const invalid = { ...profile, endpoint: "http://untrusted.example/pair" };
+  assert.throws(() =>
+    setupLink(
+      "exp://u.expo.dev/project#read-setup=" +
+        encode64(new TextEncoder().encode(JSON.stringify(invalid))),
+    ),
+  );
+  assert.throws(() =>
+    validateProfile({
+      version: 1,
+      settings: { opds: "javascript:alert(1)" },
+      secrets: {},
+      catalog: { records: [] },
+    }),
+  );
+  const valid = validateProfile({
+    version: 1,
+    settings: {
+      opds: "https://books.example/opds",
+      sync: "https://sync.example",
+      username: "reader",
+    },
+    secrets: { readwise: "sample-test-token" },
+    catalog: { records: [] },
+  });
+  assert.equal(valid.settings.readerSync, true);
+  assert.equal(valid.settings.onboarded, true);
+});
+
+test("catalog metadata edits do not reset newer local progress, and equivalent author order links safely", async () => {
+  const { calibreBook, mergeCalibre } =
+    await import("../src/lib/calibre-model");
+  const { sameBook, linkedBook } = await import("../src/lib/matching");
+  const remote = calibreBook(
+    "5",
+    {
+      uuid: "five",
+      title: "An Example",
+      authors: ["Brown, Pierce"],
+      last_modified: "2099-01-01",
+      main_format: { epub: "/get/epub/5" },
+      user_metadata: {
+        "#ko_md5": { "#value": "b".repeat(32) },
+        "#ko_progfloat": { "#value": 0.1 },
+      },
+    },
+    "https://books.example/",
+  );
+  const local = {
+    ...remote,
+    updated: Date.parse("2026-01-01"),
+    progress: 0.8,
+    hasContent: true,
+  };
+  assert.equal(mergeCalibre(remote, local).progress, 0.8);
+  assert.equal(
+    sameBook(
+      { title: "An Example", author: "Pierce Brown" },
+      { title: "An Example", author: "Brown| Pierce" },
+    ),
+    true,
+  );
+  assert.equal(
+    sameBook(
+      { title: "A", author: "Unknown" },
+      { title: "A", author: "Unknown" },
+    ),
+    false,
+  );
+  const replaced = linkedBook({ ...local, document: "a".repeat(32) }, [local]);
+  assert.equal(replaced.document, "b".repeat(32));
+});

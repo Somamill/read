@@ -1,3 +1,4 @@
+import { SetupHandoff } from "../components/SetupHandoff";
 import { Stack } from "expo-router";
 import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -16,6 +17,7 @@ function Navigation() {
           gap: 20,
         }}
       >
+        <SetupHandoff />
         <StatusBar style={dark ? "light" : "dark"} />
         {error ? (
           <>
@@ -38,6 +40,7 @@ function Navigation() {
     );
   return (
     <>
+      <SetupHandoff />
       <StatusBar style={dark ? "light" : "dark"} />
       <Stack
         screenOptions={{

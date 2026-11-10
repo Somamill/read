@@ -1,3 +1,10 @@
+## iPhone preview 0.1.2
+- Add a private, expiring, end-to-end encrypted Mac setup handoff for existing Calibre, KOReader/CrossPoint, Readwise and available Hardcover connections.
+- Show the complete Calibre catalog immediately, with authenticated cover caching and on-demand book downloads rather than requiring manual downloads to populate the shelf.
+- Import Hardcover’s currently-reading titles automatically, combine reliable identifiers/title-author matches and distinguish externally tracked titles from readable files.
+- Preserve canonical Calibre sync identifiers when downloaded EPUB bytes differ, and prevent ordinary metadata edits from overwriting reading progress.
+- Accept the standard KOSync authorized response, isolate connector failures and validate device-bound pairing, expiration and encrypted transport in regression tests.
+
 ## iPhone preview 0.1.1
 - Publish an Expo-hosted iOS preview under @somamill/read-mobile, removing the need to keep the Mac development server running for app access.
 - Link a stable iphone-preview channel and use the SDK 58 runtime policy compatible with Expo Go.

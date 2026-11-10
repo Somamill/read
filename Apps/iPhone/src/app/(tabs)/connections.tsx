@@ -1,3 +1,4 @@
+import { importMacSetup } from "../../lib/pairing";
 import { syncReader } from "../../lib/readwise";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -17,6 +18,8 @@ import {
 import { webURL } from "../../lib/model";
 export default function Connections() {
   const { settings, saveSettings, error, report, reload } = useRead();
+  const [setup, setSetup] = useState(""),
+    [pairing, setPairing] = useState(false);
   const [opds, setOpds] = useState(settings.opds),
     [sync, setSync] = useState(settings.sync),
     [username, setUsername] = useState(settings.username),
@@ -39,11 +42,12 @@ export default function Connections() {
       setReadwise(r || "");
       setHardcover(h || "");
     });
-  }, []);
+  }, [settings.opds, settings.sync, settings.username]);
   const save = async () => {
     try {
       const next = {
         ...settings,
+        onboarded: true,
         opds: opds ? webURL(opds) : "",
         sync: sync ? webURL(sync).replace(/\/$/, "") : "",
         username: username.trim(),
@@ -57,6 +61,7 @@ export default function Connections() {
           ["hardcover", hardcoverToken.trim()],
         ].map(([k, v]) => setSecret(k, v)),
       );
+      if (syncPassword) await setSecret("syncKey", "");
       await saveSettings(next);
       setStatus("Saved securely on this phone.");
       return next;
@@ -85,7 +90,11 @@ export default function Connections() {
           headers: await syncHeaders(next),
         });
         const user = await auth.json();
-        if (user.username !== next.username)
+        if (
+          user.username !== next.username &&
+          user.authorized !== "OK" &&
+          user.authorized !== true
+        )
           throw new Error("The server did not confirm this sync account.");
         await flush(next);
         results.push("KOReader sync: healthy; pending positions retried");
@@ -107,6 +116,48 @@ export default function Connections() {
   };
   return (
     <Page title="Connections" subtitle="Your servers. Your accounts. Optional.">
+      <Card>
+        <Label>Connect from your Mac</Label>
+        <Label small>
+          Use the private setup link to import your existing accounts and full
+          Calibre catalog. Credentials are encrypted in transit and saved in
+          this iPhone’s secure storage.
+        </Label>
+        <Button
+          secondary
+          title="Paste private setup link"
+          onPress={async () => setSetup(await Clipboard.getStringAsync())}
+        />
+        <Field
+          label="Private setup link"
+          value={setup}
+          onChange={setSetup}
+          secure
+        />
+        <Button
+          title={pairing ? "Connecting…" : "Connect everything"}
+          disabled={pairing || !setup}
+          onPress={async () => {
+            setPairing(true);
+            try {
+              const result = await importMacSetup(setup, settings);
+              await reload();
+              setSetup("");
+              setOpds(result.settings.opds);
+              setSync(result.settings.sync);
+              setUsername(result.settings.username);
+              setStatus(
+                `${result.count} Calibre books connected. Service credentials are saved securely.`,
+              );
+            } catch (e) {
+              report(e);
+              Alert.alert("Mac setup", (e as Error).message);
+            } finally {
+              setPairing(false);
+            }
+          }}
+        />
+      </Card>
       <Card>
         <Label>Appearance</Label>
         {(["system", "black", "bright"] as const).map((theme) => (
