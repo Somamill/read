@@ -118,14 +118,19 @@ export async function syncReader(s: Settings, force = false) {
           : undefined) ||
         (candidates.length === 1 ? candidates[0] : undefined);
       const id = existing?.id || "readwise-" + doc.id;
-      const stamp = Date.parse(doc.last_opened_at || doc.updated_at || "");
+      // An unread document's metadata edit must not reset a real Calibre position.
+      const stamp = Date.parse(
+        doc.last_opened_at ||
+          (Number(doc.reading_progress) > 0 ? doc.updated_at : "") ||
+          "",
+      );
       const localPending = queued.find(
         (q) => q.id === doc.id && q.account === account,
       );
       const remoteValue = progress(Number(doc.reading_progress || 0));
       const newer =
         Number.isFinite(stamp) &&
-        stamp > (existing?.updated || 0) &&
+        stamp > (existing?.progressUpdated ?? existing?.updated ?? 0) &&
         (!localPending || stamp > localPending.timestamp);
       const p = existing && !newer ? existing.progress : remoteValue;
       let sourceURL: string | undefined;
@@ -148,6 +153,8 @@ export async function syncReader(s: Settings, force = false) {
         chapters: existing?.chapters || [],
         readerID: String(doc.id),
         progress: p,
+        progressUpdated: newer ? stamp : existing?.progressUpdated,
+        progressKnown: newer ? true : existing?.progressKnown,
         finished: p >= 0.97,
         updated:
           existing && !newer

@@ -1,3 +1,11 @@
+## iPhone preview 0.1.5
+- Read Calibre’s native `#value#` custom-column values so progress and canonical KOReader identifiers survive catalog import; retain compatibility with older normalized snapshots.
+- Check Calibre/OPDS, KOReader/CrossPoint, Readwise and Hardcover independently at the top of Connections without changing reading history.
+- Import private setup snapshots in atomic, parameterized SQLite batches instead of thousands of separate commits.
+- Index highlight identities and book links once, preserving notes, distinct source passages and newer review history without repeatedly scanning every saved quote.
+- Pass encrypted setup data to native AES-GCM as base64 strings, avoiding large byte-array bridge transfers while preserving authenticated encryption.
+- Show meaningful setup progress for secure storage, download, decryption, preparation, saving and confirmation.
+
 ## iPhone preview 0.1.4
 - Treat highlights transferred from the Mac as mirrored passages, preventing the iPhone’s “Send new highlights to Readwise” action from uploading those existing passages again.
 - Keep their notes, offline review and sharing available; new highlights created on the iPhone remain eligible for explicit Readwise export.

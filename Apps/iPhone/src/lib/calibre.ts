@@ -2,7 +2,7 @@ import { md5 } from "js-md5";
 import { Book, Settings } from "./model";
 import { calibreBase, calibreBook, mergeCalibre } from "./calibre-model";
 import { catalogRequest } from "./network";
-import { list, put } from "./storage";
+import { list, put, putSetupRecords } from "./storage";
 import { sameBook } from "./matching";
 let running = false;
 export async function syncCalibre(s: Settings, force = false) {
@@ -10,12 +10,29 @@ export async function syncCalibre(s: Settings, force = false) {
   const base = calibreBase(s.opds),
     key = md5(base);
   const state = (
-    await list<{ id: string; checked: number }>("calibreCursor")
+    await list<{
+      id: string;
+      checked: number;
+      metadataVersion?: number;
+      repairAttempted?: boolean;
+    }>("calibreCursor")
   ).find((x) => x.id === key);
-  if (!force && state && Date.now() - state.checked < 300000) return;
+  const repair = state?.metadataVersion !== 2;
+  if (
+    !force &&
+    state &&
+    Date.now() - state.checked < 300000 &&
+    (!repair || state.repairAttempted)
+  )
+    return;
   running = true;
   try {
-    await put("calibreCursor", key, { id: key, checked: Date.now() });
+    await put("calibreCursor", key, {
+      ...state,
+      id: key,
+      checked: Date.now(),
+      repairAttempted: true,
+    });
     const search = await (
       await catalogRequest(
         base + "ajax/search?num=20000&sort=last_modified&sort_order=desc",
@@ -33,8 +50,10 @@ export async function syncCalibre(s: Settings, force = false) {
     const ids = search.book_ids
       .map(String)
       .filter(
-        (id: string, i: number) => force || !state || i < 40 || !known.has(id),
+        (id: string, i: number) =>
+          force || repair || !state || i < 40 || !known.has(id),
       );
+    const records: { kind: string; id: string; value: unknown }[] = [];
     for (let offset = 0; offset < ids.length; offset += 100) {
       const data = await (
         await catalogRequest(
@@ -57,10 +76,16 @@ export async function syncCalibre(s: Settings, force = false) {
               (b.calibre?.base === base && b.calibre.id === id),
           ) || (matches.length === 1 ? matches[0] : undefined);
         const b = mergeCalibre(incoming, prior);
-        await put("book", b.id, b);
+        records.push({ kind: "book", id: b.id, value: b });
         books = books.filter((x) => x.id !== b.id).concat(b);
       }
     }
+    records.push({
+      kind: "calibreCursor",
+      id: key,
+      value: { id: key, checked: Date.now(), metadataVersion: 2 },
+    });
+    await putSetupRecords(records);
   } finally {
     running = false;
   }

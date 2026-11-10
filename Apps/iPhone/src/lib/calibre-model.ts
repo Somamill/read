@@ -8,7 +8,10 @@ export function calibreBase(opds: string) {
   u.hash = "";
   return u.href;
 }
-const custom = (b: any, key: string) => b.user_metadata?.[key]?.["#value"];
+const custom = (b: any, key: string) => {
+  const field = b.user_metadata?.[key];
+  return field?.["#value#"] ?? field?.["#value"];
+};
 export function calibreBook(id: string, b: any, base: string): Book {
   const formats: Record<string, string> = {};
   for (const [kind, url] of Object.entries({
@@ -50,14 +53,22 @@ export function calibreBook(id: string, b: any, base: string): Book {
     added: Date.parse(b.timestamp || "") || Date.now(),
     updated: timestamp,
     progressUpdated,
+    progressKnown: !!progressUpdated,
     identifiers: b.identifiers || {},
     calibre: { id, base, formats },
   };
 }
 export function mergeCalibre(incoming: Book, existing: Book | undefined): Book {
   if (!existing) return incoming;
+  // A catalog edit/import timestamp is not a reading-position timestamp.
+  const readingTime =
+    existing.progressUpdated ??
+    (existing.progressKnown || (existing.hasContent && existing.progress > 0)
+      ? existing.updated
+      : undefined);
   const newer =
-    !!incoming.progressUpdated && incoming.progressUpdated > existing.updated;
+    !!incoming.progressUpdated &&
+    (!readingTime || incoming.progressUpdated > readingTime);
   return {
     ...incoming,
     ...existing,
@@ -81,6 +92,10 @@ export function mergeCalibre(incoming: Book, existing: Book | undefined): Book {
     identifiers: { ...existing.identifiers, ...incoming.identifiers },
     progress: newer ? incoming.progress : existing.progress,
     finished: newer ? incoming.finished : existing.finished,
+    progressUpdated: newer
+      ? incoming.progressUpdated
+      : existing.progressUpdated,
+    progressKnown: newer ? true : existing.progressKnown,
     updated: Math.max(incoming.updated, existing.updated),
   };
 }

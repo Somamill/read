@@ -231,6 +231,9 @@ export async function pullProgress(s: Settings) {
       if (!remote) continue;
       const local = pending.find((x) => x.document === b.document);
       if (local && local.timestamp >= remote.timestamp) continue;
+      const readingTime =
+        b.progressUpdated ?? (b.progressKnown ? b.updated : 0);
+      if (readingTime >= Number(remote.timestamp) * 1000) continue;
       const value = progress(Number(remote.percentage));
       if (value !== b.progress) {
         const updated = {
@@ -238,6 +241,8 @@ export async function pullProgress(s: Settings) {
           progress: value,
           finished: value >= 0.97,
           updated: Number(remote.timestamp) * 1000,
+          progressUpdated: Number(remote.timestamp) * 1000,
+          progressKnown: true,
         };
         await put("book", b.id, updated);
         changed.push(updated);

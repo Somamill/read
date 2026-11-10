@@ -1,6 +1,6 @@
 {
   "name": "read-iphone",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
