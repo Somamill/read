@@ -1,4 +1,4 @@
-import { md5 } from "js-md5";
+import { HighlightReview } from "../../components/HighlightReview";
 import { useState } from "react";
 import { Alert, Share } from "react-native";
 import { router } from "expo-router";
@@ -17,103 +17,105 @@ export default function Highlights() {
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
-  const due = review
-    ? [...rows]
-        .sort((a, b) =>
-          md5(new Date().toDateString() + a.id).localeCompare(
-            md5(new Date().toDateString() + b.id),
-          ),
-        )
-        .slice(0, 5)
-    : rows;
   return (
     <Page
       title={review ? "Daily review" : "Highlights"}
       subtitle="Your passages, notes and ideas. Stored locally."
     >
-      <Field label="Search highlights" value={query} onChange={setQuery} />
+      {!review && (
+        <Field label="Search highlights" value={query} onChange={setQuery} />
+      )}
       <Button
         secondary
-        title={review ? "All highlights" : "Review five passages"}
+        title={review ? "All highlights" : "Start daily review"}
+        icon={review ? "list-outline" : "sparkles-outline"}
         onPress={() => setReview(!review)}
       />
-      {due.slice(0, visible).map((h) => (
-        <Card key={h.id}>
-          <Label>{h.text}</Label>
-          <Label small>{h.title}</Label>
-          {!!h.note && <Label>{h.note}</Label>}
-          <Button
-            secondary
-            title="Open source"
-            onPress={() =>
-              router.push({ pathname: "/reader", params: { id: h.bookId } })
-            }
-          />
-          <Button
-            secondary
-            title="Add or edit note"
-            onPress={() =>
-              Alert.prompt(
-                "Your note",
-                "",
-                async (note) => {
-                  await put("highlight", h.id, {
-                    ...h,
-                    note: note || "",
-                    exported: false,
-                  });
-                  await reload();
-                },
-                "plain-text",
-                h.note,
-              )
-            }
-          />
-          <Button
-            secondary
-            title="Share / save to Notes"
-            onPress={() =>
-              Share.share({ message: `${h.title}\n\n“${h.text}”\n\n${h.note}` })
-            }
-          />
-          <Button
-            secondary
-            title="Delete highlight"
-            onPress={() =>
-              Alert.alert(
-                "Delete this highlight?",
-                "Export first if you want a separate copy.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                      await remove("highlight", h.id);
+      {review ? (
+        <HighlightReview />
+      ) : (
+        <>
+          {rows.slice(0, visible).map((h) => (
+            <Card key={h.id}>
+              <Label>{h.text}</Label>
+              <Label small>{h.title}</Label>
+              {!!h.note && <Label>{h.note}</Label>}
+              <Button
+                secondary
+                title="Open source"
+                onPress={() =>
+                  router.push({ pathname: "/reader", params: { id: h.bookId } })
+                }
+              />
+              <Button
+                secondary
+                title="Add or edit note"
+                onPress={() =>
+                  Alert.prompt(
+                    "Your note",
+                    "",
+                    async (note) => {
+                      await put("highlight", h.id, {
+                        ...h,
+                        note: note || "",
+                        exported: false,
+                      });
                       await reload();
                     },
-                  },
-                ],
-              )
-            }
-          />
-        </Card>
-      ))}
-      {due.length > visible && (
-        <Button
-          secondary
-          title="Show more highlights"
-          onPress={() => setVisible(visible + 40)}
-        />
-      )}
-      {!rows.length && (
-        <Card>
-          <Label>Select a passage while reading.</Label>
-          <Label small>
-            Tap Highlight selection. You can use highlights and review without
-            Readwise.
-          </Label>
-        </Card>
+                    "plain-text",
+                    h.note,
+                  )
+                }
+              />
+              <Button
+                secondary
+                title="Share / save to Notes"
+                onPress={() =>
+                  Share.share({
+                    message: `${h.title}\n\n“${h.text}”\n\n${h.note}`,
+                  })
+                }
+              />
+              <Button
+                secondary
+                title="Delete highlight"
+                onPress={() =>
+                  Alert.alert(
+                    "Delete this highlight?",
+                    "Export first if you want a separate copy.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: async () => {
+                          await remove("highlight", h.id);
+                          await reload();
+                        },
+                      },
+                    ],
+                  )
+                }
+              />
+            </Card>
+          ))}
+          {rows.length > visible && (
+            <Button
+              secondary
+              title="Show more highlights"
+              onPress={() => setVisible(visible + 40)}
+            />
+          )}
+          {!rows.length && (
+            <Card>
+              <Label>Select a passage while reading.</Label>
+              <Label small>
+                Tap Highlight selection. You can use highlights and review
+                without Readwise.
+              </Label>
+            </Card>
+          )}
+        </>
       )}
       <Button
         title="Export highlights"

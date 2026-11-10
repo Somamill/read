@@ -1,3 +1,9 @@
+## 0.3.4 / iPhone preview 0.1.3
+- Add a focused, offline daily highlights review on Mac and iPhone, with persistent daily goals, one passage at a time and tomorrow/week/month scheduling.
+- Keep completed reviews completed after reopening, avoid duplicate review clicks and schedule returns at local midnight.
+- Include saved Mac highlights and their review schedules in the private encrypted iPhone setup; preserve personal notes and newer review history on re-pairing.
+- Keep review available without Readwise or any subscription. Review history is local to each device; setup transfers a snapshot rather than claiming continuous cross-device annotation sync.
+
 ## iPhone preview 0.1.2
 - Add a private, expiring, end-to-end encrypted Mac setup handoff for existing Calibre, KOReader/CrossPoint, Readwise and available Hardcover connections.
 - Show the complete Calibre catalog immediately, with authenticated cover caching and on-demand book downloads rather than requiring manual downloads to populate the shelf.

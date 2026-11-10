@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 import urllib.parse
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 DEFAULTS = {
     'sort': 'newest', 'view': 'list', 'color': 'yellow', 'suggestTags': True,
@@ -135,7 +135,8 @@ class Library:
                  'favorite':raw.get('favorite') is True, 'archived':raw.get('archived') is True,
                  'color':raw.get('color') if raw.get('color') in ('yellow','green','blue','pink') else self.settings()['color'], 'createdAt':int(raw.get('createdAt') or now()),
                  'updatedAt':now(), 'nextReview':max(0,int(raw.get('nextReview',0))), 'frequency':min(10,max(0,float(raw.get('frequency',1)))),
-                 'reviewCount':max(0,int(raw.get('reviewCount',0)))}
+                 'reviewCount':max(0,int(raw.get('reviewCount',0))),
+                 'lastReviewedAt':max(0,int(raw.get('lastReviewedAt',old.get('lastReviewedAt',0))))}
         if not prior:
             try: value['id']=str(uuid.UUID(str(raw.get('id'))))
             except (ValueError,TypeError,AttributeError): value['id']=str(uuid.uuid4())
@@ -207,12 +208,29 @@ class Library:
             match=next((x for x in candidates if (x['bookId']>0 if category=='book' else x['source']=='read. articles')),None)
             if match and len(selected)<s['reviewSize']:selected.append(match)
         selected.extend(x for x in candidates if x not in selected)
-        return selected[:s['reviewSize']]
+        return selected[:self.review_status()['remaining']]
+
+    def review_status(self):
+        stamp=now(); today=datetime.fromtimestamp(stamp)
+        start=int(today.replace(hour=0,minute=0,second=0,microsecond=0).timestamp())
+        s=self.settings()
+        reviewed=sum(start<=x.get('lastReviewedAt',0)<=stamp for x in self.items())
+        return {'goal':s['reviewSize'],'reviewed':reviewed,'remaining':max(0,s['reviewSize']-reviewed),
+                'day':today.date().isoformat(),'snoozed':stamp<s['snoozeUntil'],
+                'scheduled':today.weekday() in s['reviewDays']}
 
     def reviewed(self,key,days):
         item=next((x for x in self.items() if x['id']==key),None)
         if not item: raise ValueError('Highlight not found')
-        item['reviewCount']+=1; item['nextReview']=now()+min(365,max(1,int(days)))*86400
+        if not isinstance(days,(int,float)) or not math.isfinite(days): raise ValueError('Invalid review interval')
+        stamp=now(); today=datetime.fromtimestamp(stamp)
+        start=int(today.replace(hour=0,minute=0,second=0,microsecond=0).timestamp())
+        # A duplicate click/request must not increment the review twice.
+        if start<=item.get('lastReviewedAt',0)<=stamp: return
+        next_day=today+timedelta(days=min(365,max(1,int(days))))
+        item['reviewCount']+=1
+        item['lastReviewedAt']=stamp
+        item['nextReview']=int(next_day.replace(hour=0,minute=0,second=0,microsecond=0).timestamp())
         self.db.execute('UPDATE highlights SET value=? WHERE id=?',(json.dumps(item),key)); self.db.commit()
 
     def enqueue(self,key,destination=None):
@@ -578,7 +596,7 @@ def dispatch(lib, p):
             lib.db.rollback(); raise
         finally: lib.batch=False
     elif action!='list': raise ValueError('Unknown annotation action')
-    return {'ok':True,**result,'readwiseSync':lib.readwise_status(),'items':lib.filter({'archived':True} if p.get('all') else p.get('rules')),'settings':lib.settings(),'collections':lib.collections(),'review':lib.review(),'queue':lib.queue(),'conflicts':lib.conflicts()}
+    return {'ok':True,**result,'readwiseSync':lib.readwise_status(),'items':lib.filter({'archived':True} if p.get('all') else p.get('rules')),'settings':lib.settings(),'collections':lib.collections(),'review':lib.review(),'reviewStatus':lib.review_status(),'queue':lib.queue(),'conflicts':lib.conflicts()}
 
 
 def main():

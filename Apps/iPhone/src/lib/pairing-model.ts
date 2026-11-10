@@ -41,6 +41,11 @@ export function validateProfile(p: any) {
     throw new Error("No connections found in this setup profile.");
   if (!Array.isArray(p.catalog?.records) || p.catalog.records.length > 20000)
     throw new Error("Invalid Calibre catalog snapshot.");
+  if (
+    p.highlights !== undefined &&
+    (!Array.isArray(p.highlights) || p.highlights.length > 20000)
+  )
+    throw new Error("Invalid highlight snapshot.");
   return {
     ...p,
     settings: {

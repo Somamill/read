@@ -104,6 +104,31 @@ class AnnotationTests(unittest.TestCase):
         self.lib.save_settings({'reviewCollection':c['id']})
         self.assertEqual(len(self.lib.review()),1)
 
+    def test_daily_review_goal_survives_reopening_and_does_not_refill_forever(self):
+        self.lib.save_settings({'reviewSize':3})
+        for i in range(8):self.add(text='Passage '+str(i))
+        for _ in range(3):self.lib.reviewed(self.lib.review()[0]['id'],7)
+        reopened=annotations.Library(self.path)
+        try:
+            self.assertEqual(reopened.review(),[])
+            self.assertEqual(reopened.review_status()['reviewed'],3)
+            reopened.save_settings({'reviewSize':5})
+            self.assertEqual(len(reopened.review()),2)
+        finally:reopened.db.close()
+
+    def test_duplicate_review_is_idempotent_and_schedule_uses_local_midnight(self):
+        item=self.add(note='Personal note')
+        self.lib.reviewed(item['id'],1)
+        once=self.lib.items()[0]
+        self.lib.reviewed(item['id'],30)
+        self.assertEqual(self.lib.items()[0],once)
+        self.assertEqual(once['reviewCount'],1)
+        self.assertEqual(once['note'],'Personal note')
+        self.assertEqual(datetime.fromtimestamp(once['nextReview']).hour,0)
+        self.assertGreater(once['nextReview'],annotations.now())
+        backup=annotations.dispatch(self.lib,{'action':'backup'})['content']
+        self.assertEqual(json.loads(backup)['highlights'][0]['lastReviewedAt'],once['lastReviewedAt'])
+
     def test_queue_survives_restart_and_never_duplicates_sent_job(self):
         self.lib.save_settings({'destinations':{'readwise':True}})
         x=self.lib.put({'text':'Passage','title':'Book'},enqueue=True)[0]

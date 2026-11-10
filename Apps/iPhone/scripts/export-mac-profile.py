@@ -30,7 +30,11 @@ fields=['uuid','title','authors','thumbnail','cover','main_format','other_format
 for offset in range(0,len(search['book_ids']),100):
  ids=','.join(map(str,search['book_ids'][offset:offset+100]));rows=get(local+'/ajax/books?ids='+ids)
  for book_id,b in rows.items():
-  if isinstance(b,dict):records.append({'id':book_id,'metadata':{k:b.get(k) for k in fields if k in b}})
+  if isinstance(b,dict):
+   metadata={k:b.get(k) for k in fields if k in b}
+   # Custom columns may contain entire highlight exports. Only sync fields are needed.
+   metadata['user_metadata']={k:{'#value':v.get('#value')} for k,v in (b.get('user_metadata') or {}).items() if k in ('#ko_md5','#ko_progfloat','#ko_lastmod') and isinstance(v,dict)}
+   records.append({'id':book_id,'metadata':metadata})
 key=hashlib.md5(password.encode()).hexdigest();sync=services.get('readerSync')
 if not sync:
  for candidate in [services.get('crosspointApi','http://127.0.0.1:17303'),'http://127.0.0.1:17200']:
@@ -52,4 +56,19 @@ if db_path.exists():
   if conn in ('hardcover','readwise','readwise-reader'):encrypted[conn]=cipher
  db.close()
 result={'version':1,'settings':{'opds':opds,'sync':sync,'username':username,'readerSync':bool(credentials.get('readwise-reader-token'))},'secrets':{'opdsUser':username,'opdsPassword':password,'syncPassword':password,'readwise':credentials.get('readwise-reader-token','')},'catalog':{'base':base,'records':records},'services':['Calibre','KOReader / CrossPoint']+(['Readwise Reader'] if credentials.get('readwise-reader-token') else []),'_connectorKey':enc_key,'_encrypted':encrypted}
-json.dump(result,sys.stdout,ensure_ascii=False)
+# Snapshot saved annotations read-only; private data stays inside the encrypted handoff.
+annotation_path=home/'Library/Application Support/Shelf/annotations.sqlite'
+result['highlights']=[]
+if annotation_path.exists():
+ db=sqlite3.connect(annotation_path.resolve().as_uri()+'?mode=ro',uri=True,timeout=5)
+ try:
+  db.execute('PRAGMA query_only=ON')
+  result['highlights']=[json.loads(r[0]) for r in db.execute('SELECT value FROM highlights LIMIT 20001')]
+  if len(result['highlights'])>20000:raise RuntimeError('The highlight library is too large for a setup handoff. Export a smaller selection instead.')
+  # Strip source location paths and source URLs; only review data is transferred.
+  allowed=('id','bookId','title','author','text','note','source','sourceCategory','createdAt','archived','frequency','reviewCount','lastReviewedAt','nextReview')
+  result['highlights']=[{k:h[k] for k in allowed if k in h} for h in result['highlights']]
+ finally:db.close()
+encoded=json.dumps(result,ensure_ascii=False)
+if len(encoded.encode())>8*1024*1024:raise RuntimeError('The private setup snapshot exceeds 8 MB. Export highlights separately.')
+sys.stdout.write(encoded)
