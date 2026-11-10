@@ -13,6 +13,10 @@
 
 Start with local articles and highlights: **no account, subscription, Xcode or separate Python installation required.** Calibre and connected services are optional dependencies for their respective features. Releases currently use the unsigned community distribution path described below.
 
+## iPhone preview
+
+An initial iPhone app is available in [Apps/iPhone](Apps/iPhone), targeting **Expo Go SDK 58** (client 58.0.5). Read EPUBs and articles, highlight, follow feeds and connect your own OPDS, KOSync and Readwise services. No Apple Developer membership is needed for the Expo Go preview. See the [setup guide and mobile feature limits](Documentation/IPHONE.md). macOS remains the stable desktop release.
+
 ## What read. does
 
 ![Books, Articles & RSS, and Highlights — an editorial illustration of read.’s three core reading workflows](Documentation/Brand/read-features.jpg)

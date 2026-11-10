@@ -1,3 +1,11 @@
+## iPhone preview 0.1.0 (Expo SDK 58)
+- Add a separate React Native/Expo Router iPhone app with local SQLite storage and secure credentials, without requiring Apple Developer enrollment for Expo Go.
+- Support EPUB/PDF/audio import through Files, paged or scrolling reading, publisher chapter navigation, Unicode metadata, local highlights, notes, review and sharing.
+- Add offline articles, RSS/Atom subscriptions, feed discovery, reading statistics, OLED Black/Bright/system themes and a fading translucent reader toolbar.
+- Connect Calibre OPDS (Basic/Digest), queued KOReader percentage sync, optional Readwise Reader library/progress sync, highlight export and a read-only Hardcover reading list.
+- Add mobile dependency/type/lint/regression checks and an iOS bundle export in CI. Document Expo Go lifecycle limits and integrations that remain macOS-only.
+- Desktop version remains 0.3.3; mobile previews use their own version and release tag.
+
 ## 0.3.3
 - Keep local article positions out of the book sync retry queue and hide known article IDs from unmatched-book warnings without deleting server records.
 - Import EPUBs through installed Calibre when no custom importer exists; clearly explain missing dependencies and retain originals on failure.

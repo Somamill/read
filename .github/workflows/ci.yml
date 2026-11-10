@@ -127,3 +127,30 @@ jobs:
           bash Scripts/build-and-install.sh
           codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/read Dev.app"
           codesign --verify --deep --strict "$SHELF_APPLICATIONS_DIR/read Dev.previous.app"
+
+  iphone-preview:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Apps/iPhone
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: Apps/iPhone/package-lock.json
+      - run: npm ci
+      - name: Regenerate shared reader assets
+        run: npm run assets
+      - name: Validate Expo SDK dependencies
+        run: npx expo install --check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Export iOS preview bundle without Apple credentials
+        run: npx expo export --platform ios --output-dir dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: read-iphone-sdk58-preview-bundle
+          path: Apps/iPhone/dist

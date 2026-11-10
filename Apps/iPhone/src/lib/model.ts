@@ -1,0 +1,91 @@
+export type Kind = "epub" | "article" | "pdf" | "audio";
+export type Book = {
+  id: string;
+  title: string;
+  author: string;
+  kind: Kind;
+  html?: string;
+  hasContent?: boolean;
+  uri?: string;
+  sourceURL?: string;
+  cover?: string;
+  document?: string;
+  readerID?: string;
+  chapters: { id: string; title: string }[];
+  progress: number;
+  updated: number;
+  added: number;
+  finished: boolean;
+  feed?: string;
+};
+export type Highlight = {
+  id: string;
+  bookId: string;
+  title: string;
+  text: string;
+  note: string;
+  created: number;
+  exported?: boolean;
+  category?: "books" | "articles";
+};
+export type Settings = {
+  theme: "system" | "black" | "bright";
+  fontSize: number;
+  layout: "pages" | "scroll";
+  opds: string;
+  sync: string;
+  username: string;
+  onboarded: boolean;
+  readerSync: boolean;
+};
+export type Feed = {
+  url: string;
+  title: string;
+  checked: number;
+  error?: string;
+};
+export type Pending = {
+  document: string;
+  percentage: number;
+  timestamp: number;
+  title: string;
+  author: string;
+};
+export const defaults: Settings = {
+  theme: "system",
+  fontSize: 20,
+  layout: "pages",
+  opds: "",
+  sync: "",
+  username: "",
+  onboarded: false,
+  readerSync: false,
+};
+export function webURL(raw: string, base?: string): string {
+  const u = new URL(raw.trim(), base);
+  if (!["http:", "https:"].includes(u.protocol) || u.username || u.password)
+    throw new Error("Use an http(s) address without embedded passwords.");
+  return u.href;
+}
+export function progress(value: number) {
+  if (!Number.isFinite(value)) throw new Error("Invalid reading position");
+  return Math.max(0, Math.min(1, value));
+}
+export function mergeProgress(
+  local: Pending | undefined,
+  remote: { percentage: number; timestamp: number },
+) {
+  return !local || remote.timestamp > local.timestamp
+    ? { ...remote, percentage: progress(remote.percentage) }
+    : local;
+}
+export const uid = () =>
+  Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+export const escapeHTML = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
