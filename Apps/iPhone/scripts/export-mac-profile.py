@@ -37,10 +37,13 @@ for offset in range(0,len(search['book_ids']),100):
    records.append({'id':book_id,'metadata':metadata})
 key=hashlib.md5(password.encode()).hexdigest();sync=services.get('readerSync')
 if not sync:
- for candidate in [services.get('crosspointApi','http://127.0.0.1:17303'),'http://127.0.0.1:17200']:
+ # Authenticate the address the phone will actually use. The private CrossPoint
+ # admin/API port is often loopback-only; the established KOSync listener is LAN-facing.
+ kosync=services.get('kosyncHealth','http://127.0.0.1:17200/healthcheck').removesuffix('/healthcheck')
+ for candidate in [lan(kosync),lan(services.get('crosspointApi','http://127.0.0.1:17303'))]:
   try:
    auth=get(candidate.rstrip('/')+'/users/auth',{'Accept':'application/vnd.koreader.v1+json','x-auth-user':username,'x-auth-key':key})
-   if auth.get('username')==username or auth.get('authorized') in ('OK',True):sync=lan(candidate);break
+   if auth.get('username')==username or auth.get('authorized') in ('OK',True):sync=candidate;break
   except Exception:pass
 if not sync:raise RuntimeError('The existing sync credentials did not authenticate. No pairing profile was created.')
 credentials_path=home/'Library/Application Support/Shelf/credentials.json'
