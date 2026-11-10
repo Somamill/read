@@ -27,11 +27,12 @@ export function reviewQueue(items: Highlight[], size = 5, time = Date.now()) {
       (h.review?.nextReview || 0) <= time &&
       (h.review?.lastReviewed || 0) < start,
   );
+  const rank = new Map(due.map((h) => [h.id, md5(start + h.id)]));
   due.sort(
     (a, b) =>
       (a.review?.count || 0) / (a.frequency || 1) -
         (b.review?.count || 0) / (b.frequency || 1) ||
-      md5(start + a.id).localeCompare(md5(start + b.id)),
+      rank.get(a.id)!.localeCompare(rank.get(b.id)!),
   );
   // Give both books and articles a place without excluding short Japanese passages.
   const diverse: Highlight[] = [];

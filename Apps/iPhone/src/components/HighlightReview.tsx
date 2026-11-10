@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View, Share } from "react-native";
 import { router } from "expo-router";
 import { useRead } from "../lib/context";
@@ -20,7 +20,10 @@ export function HighlightReview() {
     const timer = setInterval(() => setTime(Date.now()), 60_000);
     return () => clearInterval(timer);
   }, []);
-  const queue = reviewQueue(highlights, settings.reviewSize, time);
+  const queue = useMemo(
+    () => reviewQueue(highlights, settings.reviewSize, time),
+    [highlights, settings.reviewSize, time],
+  );
   const h = queue.cards[offset % Math.max(1, queue.cards.length)];
   const source = books.find((b) => b.id === h?.bookId);
   const review = async (days: number) => {

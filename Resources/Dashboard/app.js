@@ -32,6 +32,8 @@ function showPage(id){
   activePage=id;
   document.querySelectorAll('.page').forEach(e=>e.classList.remove('visible'));
   document.getElementById(id).classList.add('visible');
+  // Native menu navigation must not leave keyboard focus in a hidden settings form.
+  const page=document.getElementById(id);page.tabIndex=-1;page.focus({preventScroll:true});
   document.querySelectorAll('.taskbar a').forEach(e=>e.classList.toggle('active',e.dataset.page===id));
   document.getElementById('pageTitle').textContent=titles[id][0];
   document.getElementById('pageSub').textContent=titles[id][1];

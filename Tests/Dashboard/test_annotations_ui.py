@@ -89,7 +89,7 @@ with tempfile.TemporaryDirectory() as tmp:
   page.screenshot(path=str(Path(tmp)/'highlights.png'),full_page=True)
   page.evaluate("showPage('preferences')")
   page.screenshot(path=str(Path(tmp)/'preferences.png'),full_page=True)
-  page.evaluate("showPage('studio')")
+  page.evaluate("showPage('studio'); studioPost('status')")
   page.locator('#studioSettingsForm').wait_for()
   page.locator('#studioSettingsForm [name="notionParent"]').fill('12345678-1234-1234-1234-123456789abc')
   page.locator('#studioSettingsForm [name="chatProvider"]').select_option('openai')
