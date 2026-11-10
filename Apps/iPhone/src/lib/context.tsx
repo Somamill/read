@@ -164,6 +164,7 @@ export function ReadProvider({ children }: { children: React.ReactNode }) {
               progress: value,
               finished: value >= 0.97,
               progressKnown: true,
+              progressUpdated: Date.now(),
               trackingStatus:
                 value >= 0.97 ? ("finished" as const) : ("reading" as const),
               updated: Date.now(),

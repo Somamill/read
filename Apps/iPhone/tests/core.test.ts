@@ -347,3 +347,56 @@ test("catalog metadata edits do not reset newer local progress, and equivalent a
   const replaced = linkedBook({ ...local, document: "a".repeat(32) }, [local]);
   assert.equal(replaced.document, "b".repeat(32));
 });
+
+test("Calibre's native #value# fields retain cross-device identifiers and reading progress", async () => {
+  const { calibreBook } = await import("../src/lib/calibre-model");
+  const b = calibreBook(
+    "42",
+    {
+      uuid: "test-uuid",
+      title: "A Calibre book",
+      authors: ["Writer"],
+      user_metadata: {
+        "#ko_progfloat": { "#value#": 0.38 },
+        "#ko_md5": { "#value#": "abcdef0123456789abcdef0123456789" },
+        "#ko_lastmod": { "#value#": "2024-01-01T15:00:00+00:00" },
+      },
+    },
+    "https://books.example/",
+  );
+  assert.equal(b.progress, 0.38);
+  assert.equal(b.document, "abcdef0123456789abcdef0123456789");
+  assert.equal(b.progressUpdated, Date.parse("2024-01-01T15:00:00+00:00"));
+});
+
+test("repaired Calibre progress replaces an empty catalog snapshot without overwriting newer reading", async () => {
+  const { calibreBook, mergeCalibre } =
+    await import("../src/lib/calibre-model");
+  const metadata = {
+    uuid: "example",
+    title: "Example",
+    authors: ["Writer"],
+    last_modified: "2099-01-01",
+  };
+  const broken = calibreBook("1", metadata, "https://books.example/");
+  const repaired = calibreBook(
+    "1",
+    {
+      ...metadata,
+      user_metadata: {
+        "#ko_progfloat": { "#value#": 0.38 },
+        "#ko_lastmod": { "#value#": "2024-01-01T00:00:00Z" },
+      },
+    },
+    "https://books.example/",
+  );
+  assert.equal(mergeCalibre(repaired, broken).progress, 0.38);
+  const local = {
+    ...repaired,
+    progress: 0.8,
+    progressKnown: true,
+    progressUpdated: Date.parse("2025-01-01"),
+    updated: Date.parse("2099-01-01"),
+  };
+  assert.equal(mergeCalibre(repaired, local).progress, 0.8);
+});

@@ -1,4 +1,5 @@
 import { importMacSetup } from "../../lib/pairing";
+import { ConnectionHealth } from "../../components/ConnectionHealth";
 import { syncReader } from "../../lib/readwise";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -117,6 +118,7 @@ export default function Connections() {
   };
   return (
     <Page title="Connections" subtitle="Your servers. Your accounts. Optional.">
+      <ConnectionHealth />
       <Card>
         <Label>Connect from your Mac</Label>
         <Label small>

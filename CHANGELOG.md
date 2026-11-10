@@ -1,4 +1,6 @@
 ## iPhone preview 0.1.5
+- Read Calibre’s native `#value#` custom-column values so progress and canonical KOReader identifiers survive catalog import; retain compatibility with older normalized snapshots.
+- Check Calibre/OPDS, KOReader/CrossPoint, Readwise and Hardcover independently at the top of Connections without changing reading history.
 - Import private setup snapshots in atomic, parameterized SQLite batches instead of thousands of separate commits.
 - Index highlight identities and book links once, preserving notes, distinct source passages and newer review history without repeatedly scanning every saved quote.
 - Pass encrypted setup data to native AES-GCM as base64 strings, avoiding large byte-array bridge transfers while preserving authenticated encryption.

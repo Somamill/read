@@ -33,7 +33,7 @@ for offset in range(0,len(search['book_ids']),100):
   if isinstance(b,dict):
    metadata={k:b.get(k) for k in fields if k in b}
    # Custom columns may contain entire highlight exports. Only sync fields are needed.
-   metadata['user_metadata']={k:{'#value':v.get('#value')} for k,v in (b.get('user_metadata') or {}).items() if k in ('#ko_md5','#ko_progfloat','#ko_lastmod') and isinstance(v,dict)}
+   metadata['user_metadata']={k:{'#value#':v.get('#value#',v.get('#value'))} for k,v in (b.get('user_metadata') or {}).items() if k in ('#ko_md5','#ko_progfloat','#ko_lastmod') and isinstance(v,dict)}
    records.append({'id':book_id,'metadata':metadata})
 key=hashlib.md5(password.encode()).hexdigest();sync=services.get('readerSync')
 if not sync:
