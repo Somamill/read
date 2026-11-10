@@ -32,6 +32,7 @@ export type Highlight = {
   note: string;
   created: number;
   exported?: boolean;
+  mirrored?: boolean;
   category?: "books" | "articles";
   author?: string;
   source?: string;

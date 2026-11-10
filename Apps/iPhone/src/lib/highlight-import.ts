@@ -68,5 +68,12 @@ export function macHighlight(
     ...((prior?.review?.lastReviewed || 0) < remoteReview.lastReviewed
       ? { review: remoteReview }
       : {}),
+    // The originating Mac/provider owns these uploads. A setup snapshot is not
+    // a batch of new iPhone highlights to send back to Readwise.
+    exported: true,
+    mirrored: true,
   };
 }
+
+export const pendingHighlightExports = (items: Highlight[]) =>
+  items.filter((h) => !h.exported && !h.mirrored);
