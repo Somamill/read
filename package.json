@@ -1,6 +1,6 @@
 {
   "name": "read-desktop",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Development tests for read., the local-first reading app",
   "scripts": {
     "test": "node --test Tests/JavaScript/*.test.cjs"
