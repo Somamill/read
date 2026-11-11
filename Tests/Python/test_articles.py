@@ -200,3 +200,18 @@ class ArticleTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+class RecommendationTests(unittest.TestCase):
+    def test_sources_are_independent_and_cached(self):
+        with tempfile.TemporaryDirectory() as root:
+            lib=articles.Library(Path(root));self.addCleanup(lib.db.close)
+            payload={'docs':[{'key':'/works/OL1W','title':'Example','author_name':['Writer'],'ratings_average':4.3,'ratings_count':28,'cover_i':12}]}
+            with patch.object(articles.urllib.request,'urlopen',side_effect=[io.BytesIO(json.dumps(payload).encode()),OSError('offline')]) as request:
+                result=lib.recommend_books()
+                self.assertEqual(result['recommendationGroups'][0]['books'][0]['title'],'Example')
+                self.assertIn('warning',result['recommendationGroups'][1])
+                self.assertEqual(request.call_count,2)
+            with patch.object(articles.urllib.request,'urlopen',side_effect=OSError('offline')) as request:
+                result=lib.recommend_books()
+                self.assertEqual(result['recommendationGroups'][0]['books'][0]['title'],'Example')
+                self.assertEqual(request.call_count,1)

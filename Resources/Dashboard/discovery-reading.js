@@ -17,3 +17,16 @@ function renderDiscoveryReading(){
  document.getElementById('discoveryPassages').innerHTML=daily.map(x=>`<article class="discovery-reading-card"><blockquote>${esc(x.text.slice(0,600))}${x.text.length>600?'…':''}</blockquote><small>${esc(x.title||'Saved passage')}${x.author?' · '+esc(x.author):''}</small></article>`).join('')||'<p class="hint">Your saved highlights will appear here. Highlight a passage in the reader to start.</p>';
 }
 discoveryReading.addEventListener('click',e=>{const button=e.target.closest('[data-discovery-article]');if(button)openArticle(Number(button.dataset.discoveryArticle))});
+
+const publicRecommendations=document.createElement('section');
+publicRecommendations.id='publicRecommendations';
+publicRecommendations.innerHTML='<h2>Beyond the trends</h2><p class="hint">Open Library reader ratings and Project Gutenberg classics, alongside Hardcover. Each source uses its own ranking; popularity is not a measure of quality.</p><div id="publicBookGroups" aria-live="polite">Checking public catalogs…</div>';
+discoveryReading.after(publicRecommendations);
+function renderPublicRecommendations(groups){
+ const seen=new Set();
+ document.getElementById('publicBookGroups').innerHTML=groups.map(group=>`<section><h3>${esc(group.source)}</h3>${group.warning?`<p class="hint">${esc(group.warning)}</p>`:''}<div class="discovery-grid">${(group.books||[]).filter(b=>{const key=coreBookTitle(b.title)+'|'+normalizedAuthors(b.author);if(seen.has(key))return false;seen.add(key);return true}).map(b=>{const local=(booksData?.allBooks||[]).find(x=>sameWork(x,b));const url=validCoverURL(b.url);return `<article class="discover-book"><div class="discover-cover">${bookCover({...b,id:0})}</div><div class="discover-meta"><h3>${esc(b.title)}</h3><p>${esc(b.author)}</p><small>${esc(b.reason)}</small><div class="discover-actions">${local?`<button class="small-btn primary-action" data-recommended-local="${Number(local.id)}">Read your copy</button>`:''}${url?`<button class="small-btn" data-recommended-url="${esc(url)}">View book</button>`:''}</div></div></article>`}).join('')}</div></section>`).join('');
+ bindMissingCoverSearches(publicRecommendations);
+}
+publicRecommendations.addEventListener('click',e=>{const b=e.target.closest('button');if(b?.dataset.recommendedLocal)readBook(Number(b.dataset.recommendedLocal));if(b?.dataset.recommendedUrl)openBookLink(b.dataset.recommendedUrl)});
+
+setInterval(()=>{if(activePage==='discover'){articlePost('list');articlePost('refresh')}},300000);

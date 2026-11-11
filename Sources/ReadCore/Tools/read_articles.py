@@ -397,6 +397,41 @@ class Library:
             if not row:raise ValueError('Could not subscribe: '+str(error)[:180])
             self.db.execute('UPDATE feeds SET checked=?,error=? WHERE url=?',(time.time(),str(error)[:200],url));self.db.commit()
 
+    def recommend_books(self):
+        """Independent public catalogs; cached, bounded requests and no account data."""
+        self.db.execute('CREATE TABLE IF NOT EXISTS discovery_cache (source TEXT PRIMARY KEY, fetched REAL, payload TEXT)')
+        now=time.time();groups=[]
+        sources=[('Open Library','https://openlibrary.org/search.json?'+urllib.parse.urlencode({'q':'subject:fiction AND ratings_count:[20 TO *]','sort':'rating','limit':12,'fields':'key,title,author_name,cover_i,ratings_average,ratings_count'})),('Project Gutenberg','https://gutendex.com/books/?languages=en,de,ja&copyright=false&mime_type=application%2Fepub%2Bzip')]
+        def fetch(source,url):
+            row=self.db.execute('SELECT fetched,payload FROM discovery_cache WHERE source=?',(source,)).fetchone()
+            if row and now-row[0]<21600:return json.loads(row[1])
+            try:
+                request=urllib.request.Request(url,headers={'User-Agent':'read-open-source/0.3.6 (book discovery; https://github.com/Somamill/read)'})
+                with urllib.request.urlopen(request,timeout=8) as response:
+                    raw=response.read(2*1024*1024+1)
+                    if len(raw)>2*1024*1024:raise ValueError('Catalog response too large')
+                    data=json.loads(raw)
+                books=[]
+                for x in (data.get('docs',[]) if source=='Open Library' else data.get('results',[])):
+                    if source=='Open Library':
+                        if not re.fullmatch(r'(?:/works/)?OL\d+W',x.get('key','')):continue
+                        book={'title':x.get('title',''),'author':', '.join(x.get('author_name',[])),'url':'https://openlibrary.org/works/'+x['key'].split('/')[-1],'coverURL':'https://covers.openlibrary.org/b/id/'+str(int(x['cover_i']))+'-M.jpg' if x.get('cover_i') else '', 'reason':'Reader ratings: '+str(round(x.get('ratings_average',0),1))+'/5 · '+str(x.get('ratings_count',0))+' ratings'}
+                    else:
+                        book={'title':x.get('title',''),'author':', '.join(a.get('name','') for a in x.get('authors',[])),'url':'https://www.gutenberg.org/ebooks/'+str(int(x['id'])),'coverURL':x.get('formats',{}).get('image/jpeg',''),'reason':'Public-domain catalog · '+str(x.get('download_count',0))+' recorded downloads'}
+                    if book['title']:books.append(book)
+                    if len(books)==8:break
+                group={'source':source,'books':books,'checkedAt':now,'cached':False}
+                self.db.execute('INSERT OR REPLACE INTO discovery_cache VALUES(?,?,?)',(source,now,json.dumps(group)));self.db.commit()
+                return group
+            except Exception:
+                if row:return {**json.loads(row[1]),'cached':True,'warning':'Showing saved results; this source could not refresh.'}
+                if source=='Project Gutenberg':
+                    classics=[(84,'Frankenstein','Mary Shelley'),(1342,'Pride and Prejudice','Jane Austen'),(2554,'Crime and Punishment','Fyodor Dostoyevsky'),(2701,'Moby Dick','Herman Melville'),(2600,'War and Peace','Leo Tolstoy'),(345,'Dracula','Bram Stoker')]
+                    return {'source':source,'books':[{'title':title,'author':author,'url':f'https://www.gutenberg.org/ebooks/{identifier}','coverURL':f'https://www.gutenberg.org/cache/epub/{identifier}/pg{identifier}.cover.medium.jpg','reason':'Curated classic · public-domain edition in the USA'} for identifier,title,author in classics],'warning':'Live rankings unavailable. Showing a curated starter selection instead.'}
+                return {'source':source,'books':[],'warning':'This source is temporarily unavailable.'}
+        for source,url in sources:groups.append(fetch(source,url))
+        return {'ok':True,'recommendationGroups':groups}
+
     def discover(self):
         feeds=[dict(x) for x in self.db.execute('SELECT url,title FROM feeds')]
         followed={x['url'].rstrip('/') for x in feeds}
@@ -420,6 +455,7 @@ class Library:
     def dispatch(self, p):
         action = p.get('action','list')
         if action=='discover':return self.discover()
+        if action=='recommend_books':return self.recommend_books()
         if action=='neighbor':
             current=self.article(p['id']);rows=[x for x in self.list()['items'] if x['status']!='trash' and x['document_type']=='article' and (not current['feed'] or x['feed']==current['feed'])];index=next((i for i,x in enumerate(rows) if x['id']==current['id']),-1);target=index+(-1 if int(p.get('direction',1))<0 else 1)
             return {'ok':True,'id':rows[target]['id'] if index>=0 and 0<=target<len(rows) else None}

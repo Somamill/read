@@ -21,3 +21,16 @@ test('local highlights are not introduced as a Readwise library',()=>{
  assert.doesNotMatch(source,/My Readwise library/);
  assert.match(source,/Your highlights are saved locally in read\./);
 });
+test('one book combines numbered imports and subtitle variants while retaining cover paths',()=>{
+ const context={booksData:{allBooks:[{id:1,title:'003 - Endurance',authors:'Alfred Lansing',formats:'EPUB',coverPath:'/fixture/cover.jpg'},{id:2,title:"Endurance: Shackleton’s Incredible Voyage",authors:'Alfred Lansing',formats:'PDF'}]},hardcoverShelfDataCache:null,appleBooksData:null};vm.createContext(context);
+ vm.runInContext(source.slice(source.indexOf('function normalizedBookTitle('),source.indexOf('function setLibraryView(')),context);
+ assert.equal(context.unifiedBooks().length,1);assert.equal(context.unifiedBooks()[0].coverPath,'/fixture/cover.jpg');
+ assert.equal(context.sameWork({title:'Series Volume 1',authors:'Writer'},{title:'Series Volume 2',authors:'Writer'}),false);
+ assert.equal(context.sameWork({title:'Endurance',authors:'Different Writer'},{title:'Endurance: A Voyage',authors:'Alfred Lansing'}),false);
+});
+test('cover callbacks tolerate an already rendered image without fallback-only data',()=>{
+ const images=[],context={window:{},CSS:{escape:String},document:{querySelectorAll:()=>[{dataset:{},alt:'Cover of Example'}]},Image:class{constructor(){images.push(this)}}};vm.createContext(context);
+ vm.runInContext(source.split('\n').find(x=>x.startsWith('window.bookCoverLoaded=')),context);
+ context.window.bookCoverLoaded({bookId:1,coverData:'data:image/jpeg;base64,fixture'});
+ assert.equal(images[0].alt,'Cover of Example');
+});
