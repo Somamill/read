@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import time
 import urllib.request
+import urllib.error
+import urllib.parse
 from shelf_config import configured_path, configuration_section
 
 STATE = configured_path('state', '~/Books/state')
@@ -15,6 +17,45 @@ LOGS = configured_path('logs', '~/Books/logs')
 TOOLS = configuration_section('tools')
 DOCKER = TOOLS.get('docker') or shutil.which('docker') or '/opt/homebrew/bin/docker'
 COLIMA = shutil.which('colima') or '/opt/homebrew/bin/colima'
+
+
+def check_calibre():
+    """Recover only a configured local server, after two failures and with backoff."""
+    url = configuration_section('services').get('calibreOpds', '')
+    label = configuration_section('launchAgents').get('calibre', '')
+    if urllib.parse.urlparse(url).hostname not in ('127.0.0.1', 'localhost', '::1') or not label:
+        return
+    path = STATE/'calibre-runtime-health.json'
+    try:
+        state = json.loads(path.read_text())
+    except (OSError, ValueError):
+        state = {}
+    now = time.time()
+    try:
+        with urllib.request.urlopen(url, timeout=5) as response:
+            ok = response.status == 200 and b'<feed' in response.read(4096)
+    except urllib.error.HTTPError as error:
+        # An authentication challenge confirms that the protected server responds.
+        ok = error.code == 401
+        error.close()
+    except (OSError, ValueError):
+        ok = False
+    if ok:
+        if state.get('offline'):
+            log('RECOVERED · Calibre is responding again.')
+        save(path, {'checkedAt':now, 'failures':0, 'offline':False})
+        return
+    failures = int(state.get('failures', 0)) + 1
+    if failures >= 2 and now >= state.get('retryAfter', 0):
+        try:
+            result = command(['/bin/launchctl', 'kickstart', '-k', f'gui/{os.getuid()}/{label}'], timeout=15)
+            message = ('RECOVERING · Restarting unresponsive Calibre.' if result.returncode == 0
+                       else 'WARNING · Calibre recovery could not start its configured launch agent.')
+        except (OSError, subprocess.TimeoutExpired):
+            message = 'WARNING · Calibre recovery timed out; it will retry after a cooldown.'
+        log(message)
+        state['retryAfter'] = now + min(1800, 300 * failures)
+    save(path, {**state, 'checkedAt':now, 'failures':failures, 'offline':True})
 
 
 def command(args, timeout=15):
@@ -38,6 +79,7 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             return
+        check_calibre()
         statefile = STATE/'sync-runtime-health.json'
         try:
             state = json.loads(statefile.read_text())
