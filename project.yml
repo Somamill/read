@@ -40,6 +40,8 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/reader-links.js
         buildPhase: resources
+      - path: Resources/Dashboard/discovery-reading.js
+        buildPhase: resources
       - path: Resources/Dashboard/articles.js
         buildPhase: resources
       - path: Resources/Dashboard/articles.css
@@ -108,8 +110,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.4
-        CURRENT_PROJECT_VERSION: 55
+        MARKETING_VERSION: 0.3.5
+        CURRENT_PROJECT_VERSION: 56
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES

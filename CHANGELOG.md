@@ -1,4 +1,8 @@
-## Unreleased
+## 0.3.5
+- Add independent Open Library recommendations and Project Gutenberg classics alongside Hardcover, with source labels, bounded requests, six-hour caching and offline fallbacks.
+- Preserve cover metadata when combining library connections and fix cover callbacks for images already on screen. Group numbered imports and clear subtitle variants by matching author, while keeping different numbered volumes separate.
+- Simplify book-card metadata and reduce background cover-repair bursts.
+- Discover recent unread stories from subscribed feeds and revisit a daily selection of saved highlights. Stories open in the local reader; sources and publication dates stay visible.
 - Check the configured local Calibre catalog in the background recovery service. Restart only after two failed checks, with a cooldown to avoid restart loops during slow startup. Authentication challenges count as a responsive server; remote servers are never restarted.
 
 ## iPhone preview 0.1.6

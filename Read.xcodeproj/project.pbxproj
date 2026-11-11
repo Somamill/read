@@ -26,6 +26,7 @@
 		6C0DFD55EEC69F60C6554388 /* open_library_book.py in Resources */ = {isa = PBXBuildFile; fileRef = 7C11C9EBB2D4F998F988E87F /* open_library_book.py */; };
 		82B3692D34397D5A385935FC /* ReadCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5DD1D46BA4751AE7564C955F /* ReadCore */; };
 		85F2C5D8299959CE4E748977 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B23437D2BEA00E9876F83AA /* AppIcon.icns */; };
+		85FBF83036782EF55B555C81 /* discovery-reading.js in Resources */ = {isa = PBXBuildFile; fileRef = 4CE39360593BBFFFB9A1174B /* discovery-reading.js */; };
 		8A179D9B7E83D1F08C2A3C01 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 9ABAAD046DBB9298507952B3 /* index.html */; };
 		9484A146D962B5FEB3A4C069 /* shelf_book_actions.py in Resources */ = {isa = PBXBuildFile; fileRef = 78D80322B27FF3646155F8C1 /* shelf_book_actions.py */; };
 		9534454911E784567C1D2E8F /* articles.js in Resources */ = {isa = PBXBuildFile; fileRef = 9F37A76521C1FF02179282B1 /* articles.js */; };
@@ -58,6 +59,7 @@
 		3D8EB922C75D82D8EB27156E /* reader-style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "reader-style.css"; sourceTree = "<group>"; };
 		3EE92AD10E30EC5435079A8F /* reader_book.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = reader_book.py; sourceTree = "<group>"; };
 		4318B1C2166E41A6F114D7B0 /* Read.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Read.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CE39360593BBFFFB9A1174B /* discovery-reading.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "discovery-reading.js"; sourceTree = "<group>"; };
 		4EF15F82053C334DEB0EEBE5 /* style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = style.css; sourceTree = "<group>"; };
 		4F818499F974E78CDD94EE0A /* config.example.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = config.example.json; sourceTree = "<group>"; };
 		52CF3444B3105FBF75D54178 /* ReaderContentsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderContentsController.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				A90EA46B65DAAA0B89DF58ED /* article-extraction.js */,
 				A75D0CECD5AB7D8719BBB6DE /* articles.css */,
 				9F37A76521C1FF02179282B1 /* articles.js */,
+				4CE39360593BBFFFB9A1174B /* discovery-reading.js */,
 				9ABAAD046DBB9298507952B3 /* index.html */,
 				2C9FA43996BC682F3D965CAD /* reader-experience.js */,
 				BEE0F32731BC8DBBE885931E /* reader-links.js */,
@@ -295,6 +298,7 @@
 				3CAEF6A129EDEEC363A4B990 /* boox_settings.py in Resources */,
 				A6AE7C0759C48518A66AB4E8 /* calibre_fts.py in Resources */,
 				6C034BE063BC51CEA710D5DF /* config.example.json in Resources */,
+				85FBF83036782EF55B555C81 /* discovery-reading.js in Resources */,
 				5CC1A662F1FADD16C45BB855 /* epub_native.py in Resources */,
 				8A179D9B7E83D1F08C2A3C01 /* index.html in Resources */,
 				562014685E78F5661051E5D5 /* kosync_calibre_bridge.py in Resources */,
@@ -359,7 +363,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 55;
+				CURRENT_PROJECT_VERSION = 56;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -373,7 +377,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.4;
+				MARKETING_VERSION = 0.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;
@@ -387,7 +391,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 55;
+				CURRENT_PROJECT_VERSION = 56;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -401,7 +405,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.4;
+				MARKETING_VERSION = 0.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;

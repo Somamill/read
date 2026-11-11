@@ -15,7 +15,7 @@ articleSection.innerHTML=`<div class="article-header"><div><p class="eyebrow">RE
 document.querySelector('main').insertBefore(articleSection,document.querySelector('main footer'));
 const articleNav=document.createElement('a');articleNav.dataset.page='articles';articleNav.innerHTML='<span class="nav-symbol">≡</span><small>Articles</small>';articleNav.setAttribute('role','button');articleNav.tabIndex=0;articleNav.addEventListener('click',()=>showPage('articles'));articleNav.addEventListener('keydown',e=>{if(e.key==='Enter')showPage('articles')});document.querySelector('.taskbar').insertBefore(articleNav,document.querySelector('.taskbar a[data-page="discover"]'));
 const originalShowPage=showPage;
-showPage=function(id){originalShowPage(id);if(id==='articles'){articlePost('list');articlePost('refresh')}};
+showPage=function(id){originalShowPage(id);if(id==='articles'||id==='discover'){articlePost('list');articlePost('refresh')}if(id==='discover'){annotationPost('list');articlePost('recommend_books');renderDiscoveryReading()}};
 function articleNotice(text,error=false){const el=document.getElementById('articleNotice');el.textContent=text;el.className=error?'article-error':'article-notice'}
 function articleMinutes(x){return Math.max(1,Math.ceil((x.characters||0)/1200))}
 function renderArticles(){
@@ -33,7 +33,7 @@ function renderArticles(){
 }
 function openArticle(identifier,listen=false){const item=articleLibrary.items.find(x=>x.id===identifier);if(!item)return;if(!item.fetched){articleNotice('Saving the full article for offline reading…');articlePost('fetch',{url:item.url,articleId:identifier,listen});pendingArticleListen=listen;return}articlePost('open',{id:identifier,listen})}
 let pendingArticleListen=false;
-window.articleData=value=>{articleBusy=false;if(value.items){articleLibrary=value;renderArticles();renderReadingConnections()}if(value.subscribedFeedURL){articleSourceFilter=value.subscribedFeedURL;articleFilter='inbox';showPage('articles');articleNotice('Feed connected. New stories arrive here automatically.');renderArticles()}if(value.savedId){articleNotice('Article saved locally.');document.getElementById('articleURL').value='';if(value.openAfterSave)articlePost('open',{id:value.savedId,listen:pendingArticleListen,linkRequest:value.linkRequest});pendingArticleListen=false}};
+window.articleData=value=>{articleBusy=false;if(value.recommendationGroups)renderPublicRecommendations(value.recommendationGroups);if(value.items){articleLibrary=value;renderArticles();renderReadingConnections();renderDiscoveryReading()}if(value.subscribedFeedURL){articleSourceFilter=value.subscribedFeedURL;articleFilter='inbox';showPage('articles');articleNotice('Feed connected. New stories arrive here automatically.');renderArticles()}if(value.savedId){articleNotice('Article saved locally.');document.getElementById('articleURL').value='';if(value.openAfterSave)articlePost('open',{id:value.savedId,listen:pendingArticleListen,linkRequest:value.linkRequest});pendingArticleListen=false}};
 window.articleSearchResults=value=>{articleSearchMatches=new Set(value.matches||[]);renderArticles()};
 window.articleError=value=>{articleBusy=false;pendingArticleListen=false;post({type:'articleLinkError',message:value.error||'The source could not be read.',linkRequest:value.linkRequest});articleNotice(value.error||'Could not save this article. Please try again.',true)};
 window.articleFetched=value=>{

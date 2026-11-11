@@ -407,3 +407,8 @@ main{padding-top:40px!important}
 .review-summary p{font-weight:600;margin:0}.review-summary small{color:var(--muted)}
 .review-summary progress{width:100%;height:6px;accent-color:var(--blue)}
 .review-actions{margin-top:20px}.review-actions button{min-height:44px}
+
+/* Keep the shelf focused on covers, titles and a clear primary action. */
+.all-book-card{align-self:start}.all-book-meta{gap:8px}.book-source-badges{opacity:.75}.book-details summary{font-size:12px;color:var(--muted)}.book-card-actions{gap:8px;flex-wrap:wrap}.book-card-actions .small-btn:not(.primary-action){font-size:12px;padding:7px 10px;min-height:32px}.all-book-meta>small{font-size:12px}.discovery-reading-card p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+
+.book-more{font-size:12px;color:var(--muted)}.book-more summary{cursor:pointer;padding:8px}.book-more>div{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}.book-card-actions>.primary-action{flex:1}

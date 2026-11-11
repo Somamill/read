@@ -1098,7 +1098,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
             if articleSpeech?.isSpeaking == true { articleSpeech?.stopSpeaking();return }
             articleSpeech=NSSpeechSynthesizer();articleSpeech?.startSpeaking(text);return
         }
-        let queue=action == "images" ? articleImageQueue : (["fetch","subscribe","refresh"].contains(action) ? articleFetchQueue : articleQueue)
+        let queue=action == "images" ? articleImageQueue : (["fetch","subscribe","refresh","recommend_books"].contains(action) ? articleFetchQueue : articleQueue)
         queue.async { [weak self] in
             guard let self else { return }
             var result=self.articleResult(body)
