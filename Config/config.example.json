@@ -50,5 +50,9 @@
   },
   "logFiles": {
     "caddy": ""
+  },
+  "booxWifi": {
+    "endpoint": "",
+    "usbSerial": ""
   }
 }

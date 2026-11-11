@@ -1,3 +1,7 @@
+## 0.3.7
+- Recover BOOX Wi-Fi debugging automatically when an explicitly configured, already-authorized tablet reconnects over USB after reboot. Detect its current Wi-Fi address and avoid restarting an active TCP debugging session.
+- Save changed endpoints atomically in private configuration. Keep existing authorization requirements and bounded five-minute reconnection checks.
+
 ## 0.3.6
 - Use a downloadable-files-only Calibre catalog for BOOX setup, preserving custom feed URLs and library selection.
 - Separate Discover into Books, Articles and Highlights; keep eight public recommendations visible and collapse the longer Hardcover trend list.
