@@ -8,6 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 
 TOKEN = re.compile(
@@ -188,6 +189,13 @@ def write_settings(path: Path, value: dict) -> None:
     os.chmod(path, 0o600)
 
 
+def downloadable_catalog_url(url: str) -> str:
+    parts = urlsplit(url)
+    if parts.path.rstrip('/').endswith('/opds'):
+        return urlunsplit(parts._replace(path=parts.path.rstrip('/')+'/search/formats%3Atrue'))
+    return url
+
+
 def main() -> int:
     if len(sys.argv) != 3:
         print("usage: boox_settings.py EXISTING_DIR OUTPUT_DIR", file=sys.stderr)
@@ -195,7 +203,7 @@ def main() -> int:
     values = json.load(sys.stdin)
     existing = Path(sys.argv[1])
     output = Path(sys.argv[2])
-    opds_url = values["opds_url"]
+    opds_url = downloadable_catalog_url(values["opds_url"])
     sync_url = values["sync_url"]
     username = values["username"]
     password = values["calibre_password"]

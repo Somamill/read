@@ -1,3 +1,9 @@
+## 0.3.6
+- Use a downloadable-files-only Calibre catalog for BOOX setup, preserving custom feed URLs and library selection.
+- Separate Discover into Books, Articles and Highlights; keep eight public recommendations visible and collapse the longer Hardcover trend list.
+- Cache local cover thumbnails across shelf refreshes and register image load handlers before assigning cached image data.
+- Add a quiet, bounded reconnect helper for an already authorized BOOX Wi-Fi debugging endpoint. Android 10 may require USB to re-enable TCP debugging after reboot.
+
 ## 0.3.5
 - Add independent Open Library recommendations and Project Gutenberg classics alongside Hardcover, with source labels, bounded requests, six-hour caching and offline fallbacks.
 - Preserve cover metadata when combining library connections and fix cover callbacks for images already on screen. Group numbered imports and clear subtitle variants by matching author, while keeping different numbered volumes separate.

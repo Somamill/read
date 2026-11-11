@@ -143,9 +143,11 @@ with tempfile.TemporaryDirectory() as tmp:
   assert captured['text']=='First' and captured['start']==0 and captured['end']==5
   page.evaluate("showPage('discover')")
   page.evaluate("articleData({items:[{id:999,title:'Discovery fixture',site:'example.org',url:'https://example.org/story',feed:'https://example.org/feed',status:'inbox',document_type:'article',published:1,excerpt:'A real feed story fixture'}],feeds:[]})")
+  page.evaluate("setDiscoverySection('articles')")
   page.locator('#discoveryStories').get_by_text('Discovery fixture',exact=True).wait_for()
   assert page.locator('#discoveryStories').get_by_role('button',name='Read article').count()==1
   page.evaluate("renderPublicRecommendations([{source:'Open Library',books:[{title:'Example recommendation',author:'Writer',url:'https://openlibrary.org/works/OL1W',reason:'Fixture rating'}]}])")
+  page.evaluate("setDiscoverySection('books')")
   page.locator('#publicBookGroups').get_by_role('heading',name='Example recommendation',exact=True).wait_for()
   assert page.locator('#publicBookGroups').get_by_role('button',name='View book').count()==1
   browser.close()
