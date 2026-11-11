@@ -13,6 +13,10 @@ spec.loader.exec_module(settings)
 
 
 class CatalogMigrationTests(unittest.TestCase):
+    def test_catalog_filter_preserves_library_query_and_custom_feeds(self):
+        self.assertEqual(settings.downloadable_catalog_url('http://example.org/opds/?library_id=Other'), 'http://example.org/opds/search/formats%3Atrue?library_id=Other')
+        self.assertEqual(settings.downloadable_catalog_url('https://example.org/custom'), 'https://example.org/custom')
+
     def test_network_change_deduplicates_and_preserves_other_catalogs(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -34,7 +38,7 @@ class CatalogMigrationTests(unittest.TestCase):
                 legacy = settings.read_settings(output/'settings.reader.lua')
                 for items in (opds['servers'], legacy['opds_servers']):
                     self.assertEqual(list(items), [1,2])
-                    self.assertEqual(items[1]['url'], values['opds_url'])
+                    self.assertEqual(items[1]['url'], settings.downloadable_catalog_url(values['opds_url']))
                     self.assertEqual(items[2]['title'], 'Other books')
                 self.assertEqual(legacy['font_size'],24)
                 self.assertEqual(opds['downloads'],{'keep':True})

@@ -69,6 +69,8 @@ targets:
         buildPhase: resources
       - path: Sources/ReadCore/Tools/shelf_config.py
         buildPhase: resources
+      - path: Sources/ReadCore/Tools/boox_wifi_reconnect.py
+        buildPhase: resources
       - path: Sources/ReadCore/Tools/boox_settings.py
         buildPhase: resources
       - path: Sources/ReadCore/Tools/boox_rotation.py
@@ -110,8 +112,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.5
-        CURRENT_PROJECT_VERSION: 56
+        MARKETING_VERSION: 0.3.6
+        CURRENT_PROJECT_VERSION: 57
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES

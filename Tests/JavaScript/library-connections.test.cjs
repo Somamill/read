@@ -10,7 +10,7 @@ test('recent activity chooses the latest reading location instead of first nonem
  assert.equal(date,Date.parse('2026-11-06'));
 });
 test('an ebook file URL cannot mask audiobook artwork and missing Apple artwork resolves by catalog ID',()=>{
- const context={URL,esc:String,externalCoverCache:new Map(),coverFallback:()=>'<fallback>'};vm.createContext(context);
+ const context={URL,esc:String,externalCoverCache:new Map(),localBookCoverCache:new Map(),coverFallback:()=>'<fallback>'};vm.createContext(context);
  vm.runInContext(line('validCoverURL')+'\n'+line('bookCover'),context);
  const cover=vm.runInContext(`bookCover({title:'Audio',coverURL:'file:///book.epub',hardcover:{coverURL:'https://assets.hardcover.app/cover.jpg'}})`,context);
  assert.match(cover,/data-external-cover="https:\/\/assets.hardcover.app\/cover.jpg"/);
@@ -29,7 +29,7 @@ test('one book combines numbered imports and subtitle variants while retaining c
  assert.equal(context.sameWork({title:'Endurance',authors:'Different Writer'},{title:'Endurance: A Voyage',authors:'Alfred Lansing'}),false);
 });
 test('cover callbacks tolerate an already rendered image without fallback-only data',()=>{
- const images=[],context={window:{},CSS:{escape:String},document:{querySelectorAll:()=>[{dataset:{},alt:'Cover of Example'}]},Image:class{constructor(){images.push(this)}}};vm.createContext(context);
+ const images=[],context={window:{},localBookCoverCache:new Map(),CSS:{escape:String},document:{querySelectorAll:()=>[{dataset:{},alt:'Cover of Example'}]},Image:class{constructor(){images.push(this)}}};vm.createContext(context);
  vm.runInContext(source.split('\n').find(x=>x.startsWith('window.bookCoverLoaded=')),context);
  context.window.bookCoverLoaded({bookId:1,coverData:'data:image/jpeg;base64,fixture'});
  assert.equal(images[0].alt,'Cover of Example');

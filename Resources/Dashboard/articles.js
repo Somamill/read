@@ -15,7 +15,7 @@ articleSection.innerHTML=`<div class="article-header"><div><p class="eyebrow">RE
 document.querySelector('main').insertBefore(articleSection,document.querySelector('main footer'));
 const articleNav=document.createElement('a');articleNav.dataset.page='articles';articleNav.innerHTML='<span class="nav-symbol">≡</span><small>Articles</small>';articleNav.setAttribute('role','button');articleNav.tabIndex=0;articleNav.addEventListener('click',()=>showPage('articles'));articleNav.addEventListener('keydown',e=>{if(e.key==='Enter')showPage('articles')});document.querySelector('.taskbar').insertBefore(articleNav,document.querySelector('.taskbar a[data-page="discover"]'));
 const originalShowPage=showPage;
-showPage=function(id){originalShowPage(id);if(id==='articles'||id==='discover'){articlePost('list');articlePost('refresh')}if(id==='discover'){annotationPost('list');articlePost('recommend_books');renderDiscoveryReading()}};
+showPage=function(id){originalShowPage(id);if(id==='articles'||id==='discover'){articlePost('list');articlePost('refresh')}if(id==='discover'){articlePost('recommend_books');renderDiscoveryReading()}};
 function articleNotice(text,error=false){const el=document.getElementById('articleNotice');el.textContent=text;el.className=error?'article-error':'article-notice'}
 function articleMinutes(x){return Math.max(1,Math.ceil((x.characters||0)/1200))}
 function renderArticles(){
