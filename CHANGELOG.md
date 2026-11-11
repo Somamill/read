@@ -1,3 +1,6 @@
+## Unreleased
+- Check the configured local Calibre catalog in the background recovery service. Restart only after two failed checks, with a cooldown to avoid restart loops during slow startup. Authentication challenges count as a responsive server; remote servers are never restarted.
+
 ## iPhone preview 0.1.6
 - Validate the LAN-facing sync address when exporting private Mac setup, preferring the established KOSync listener over CrossPoint’s loopback-only management port.
 - Preserve configured custom sync URLs and existing authentication; no additional network ports are exposed.
