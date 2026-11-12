@@ -112,8 +112,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.6
-        CURRENT_PROJECT_VERSION: 57
+        MARKETING_VERSION: 0.3.7
+        CURRENT_PROJECT_VERSION: 58
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES
