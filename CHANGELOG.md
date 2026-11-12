@@ -1,3 +1,7 @@
+## 0.3.8
+- Repair missing EPUB 3 SVG manifest declarations on a staged copy, accepting the result only after EPUBCheck succeeds and preserving an exact original backup. Other validation failures remain held for review.
+- Include an idempotent installer for the existing import validation gate, keeping the normal malware scan, Calibre import and sync fingerprint workflow.
+
 ## 0.3.7
 - Recover BOOX Wi-Fi debugging automatically when an explicitly configured, already-authorized tablet reconnects over USB after reboot. Detect its current Wi-Fi address and avoid restarting an active TCP debugging session.
 - Save changed endpoints atomically in private configuration. Keep existing authorization requirements and bounded five-minute reconnection checks.

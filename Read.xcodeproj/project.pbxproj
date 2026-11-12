@@ -25,6 +25,7 @@
 		6BBB0D3AB832CD110A79BC38 /* app.js in Resources */ = {isa = PBXBuildFile; fileRef = 985D89087A80042BDA6B1B0F /* app.js */; };
 		6C034BE063BC51CEA710D5DF /* config.example.json in Resources */ = {isa = PBXBuildFile; fileRef = 4F818499F974E78CDD94EE0A /* config.example.json */; };
 		6C0DFD55EEC69F60C6554388 /* open_library_book.py in Resources */ = {isa = PBXBuildFile; fileRef = 7C11C9EBB2D4F998F988E87F /* open_library_book.py */; };
+		7BFDC955613C48BD8892F2E8 /* epub_manifest_repair.py in Resources */ = {isa = PBXBuildFile; fileRef = 7BECD7589497DEB560164281 /* epub_manifest_repair.py */; };
 		82B3692D34397D5A385935FC /* ReadCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5DD1D46BA4751AE7564C955F /* ReadCore */; };
 		85F2C5D8299959CE4E748977 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B23437D2BEA00E9876F83AA /* AppIcon.icns */; };
 		85FBF83036782EF55B555C81 /* discovery-reading.js in Resources */ = {isa = PBXBuildFile; fileRef = 4CE39360593BBFFFB9A1174B /* discovery-reading.js */; };
@@ -69,6 +70,7 @@
 		726F61E9853C190711F0888D /* boox_wifi_reconnect.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = boox_wifi_reconnect.py; sourceTree = "<group>"; };
 		76AB03E5F3AB31CE18B19A39 /* read_articles.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = read_articles.py; sourceTree = "<group>"; };
 		78D80322B27FF3646155F8C1 /* shelf_book_actions.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = shelf_book_actions.py; sourceTree = "<group>"; };
+		7BECD7589497DEB560164281 /* epub_manifest_repair.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = epub_manifest_repair.py; sourceTree = "<group>"; };
 		7C11C9EBB2D4F998F988E87F /* open_library_book.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = open_library_book.py; sourceTree = "<group>"; };
 		8C4CBA56F98815A6D681267F /* calibre_fts.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = calibre_fts.py; sourceTree = "<group>"; };
 		98439284EF005C4C896390D2 /* boox_rotation.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = boox_rotation.py; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 				28FB9CDCF752D8B3C7C1F2F5 /* boox_settings.py */,
 				726F61E9853C190711F0888D /* boox_wifi_reconnect.py */,
 				8C4CBA56F98815A6D681267F /* calibre_fts.py */,
+				7BECD7589497DEB560164281 /* epub_manifest_repair.py */,
 				D067F9ECB79C938D5BD89ABB /* epub_native.py */,
 				1FB78FB7936D5944C5AD5EFA /* kosync_calibre_bridge.py */,
 				7C11C9EBB2D4F998F988E87F /* open_library_book.py */,
@@ -303,6 +306,7 @@
 				A6AE7C0759C48518A66AB4E8 /* calibre_fts.py in Resources */,
 				6C034BE063BC51CEA710D5DF /* config.example.json in Resources */,
 				85FBF83036782EF55B555C81 /* discovery-reading.js in Resources */,
+				7BFDC955613C48BD8892F2E8 /* epub_manifest_repair.py in Resources */,
 				5CC1A662F1FADD16C45BB855 /* epub_native.py in Resources */,
 				8A179D9B7E83D1F08C2A3C01 /* index.html in Resources */,
 				562014685E78F5661051E5D5 /* kosync_calibre_bridge.py in Resources */,
@@ -367,7 +371,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 58;
+				CURRENT_PROJECT_VERSION = 59;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -381,7 +385,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.7;
+				MARKETING_VERSION = 0.3.8;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;
@@ -395,7 +399,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 58;
+				CURRENT_PROJECT_VERSION = 59;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -409,7 +413,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.7;
+				MARKETING_VERSION = 0.3.8;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;

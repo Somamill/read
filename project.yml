@@ -61,6 +61,8 @@ targets:
         buildPhase: resources
       - path: Sources/ReadCore/Tools/shelf_book_actions.py
         buildPhase: resources
+      - path: Sources/ReadCore/Tools/epub_manifest_repair.py
+        buildPhase: resources
       - path: Sources/ReadCore/Tools/epub_native.py
         buildPhase: resources
       - path: Sources/ReadCore/Tools/reader_book.py
@@ -112,8 +114,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.7
-        CURRENT_PROJECT_VERSION: 58
+        MARKETING_VERSION: 0.3.8
+        CURRENT_PROJECT_VERSION: 59
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES
