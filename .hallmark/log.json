@@ -1,0 +1,13 @@
+[
+ {
+  "scope": "app",
+  "theme": "existing dot. identity",
+  "prompt": "Apply dot. branding and consistent design while keeping each app identity",
+  "signature": "shared suite signature and semantic tokens",
+  "fingerprint": "dot-runtime-1.1.0",
+  "entry": "refinement",
+  "waived": [],
+  "date": "2026-11-12",
+  "mode": "build"
+ }
+]

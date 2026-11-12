@@ -1,0 +1,64 @@
+/* Hallmark · shape: app screen · genre: media library · theme: existing dot. identity */
+/* Refinement: preserve task layouts and content; share semantic roles and control rhythm. */
+:root { --dot-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --dot-oled-background: #000; --dot-oled-surface: #101010; --dot-shell-shadow: 0 8px 24px #00000018; --dot-accent: var(--dot-accent-read); }
+html[data-dot-theme] { accent-color: var(--dot-accent); scrollbar-color: var(--dot-border) var(--dot-background); }
+body { font-family: var(--dot-font-ui); }
+::selection { background: var(--dot-accent); color: var(--dot-on-accent); }
+input, textarea { caret-color: var(--dot-accent); }
+input::placeholder, textarea::placeholder { color: var(--dot-secondaryText); opacity: 1; }
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--dot-accent); outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; }
+.dot-suite { color: var(--dot-text); font-size: 13px; line-height: 1.5; min-width: 0; }
+.dot-suite summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; width: fit-content; }
+.dot-suite summary::-webkit-details-marker { display: none; }
+.dot-suite summary::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dot-accent); flex-shrink: 0; }
+.dot-suite summary::after { content: "+"; color: var(--dot-secondaryText); }
+.dot-suite[open] summary::after { content: "−"; }
+.dot-suite b { font-size: 19px; font-weight: 700; letter-spacing: -.4px; }
+.dot-suite nav { display: grid; gap: 4px; padding: 4px 0 12px; }
+.dot-suite nav a { display: block; min-height: 44px; padding: 8px 0; color: var(--dot-accent); text-decoration: underline; text-underline-offset: 3px; line-height: 1.5; }
+.dot-suite nav a:hover { text-decoration-thickness: 2px; }
+.dot-suite nav small { display: block; font-size: 12px; color: var(--dot-secondaryText); }
+.dot-suite p { color: var(--dot-secondaryText); font-size: 13px; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+html[data-dot-theme], html[data-theme="light"], html[data-theme="dark"] {
+  --ink: var(--dot-text); --muted: var(--dot-secondaryText); --line: var(--dot-border); --paper: var(--dot-background); --blue: var(--dot-accent);
+  --glass-surface: var(--dot-surface); --glass-raised: var(--dot-surface); --glass-stroke: var(--dot-border);
+  --glass-depth: none;
+}
+html[data-appearance="oled"] { --dot-background: var(--dot-oled-background); --dot-surface: var(--dot-oled-surface); }
+html[data-dot-theme] body { background: var(--dot-background); color: var(--dot-text); }
+html[data-dot-theme] h1 { font-size: 28px; font-weight: 700; letter-spacing: -.6px; }
+html[data-dot-theme] .btn, html[data-dot-theme] .small-btn, html[data-dot-theme] .text-btn, html[data-dot-theme] .appearance-control, html[data-dot-theme] .appearance-control select { border-radius: var(--dot-radius-control); }
+html[data-dot-theme] .btn, html[data-dot-theme] .small-btn, html[data-dot-theme] .text-btn { min-height: 40px; font-size: 13px; }
+html[data-dot-theme] .btn.primary { background: var(--dot-accent); color: var(--dot-on-accent); border-color: transparent; box-shadow: none; }
+html[data-dot-theme] .btn.primary:hover { filter: brightness(.94); }
+html[data-dot-theme] .setup-card, html[data-dot-theme] .connect-card, html[data-dot-theme] .integration-card, html[data-dot-theme] .book-card, html[data-dot-theme] .setup-quick-start { border-radius: var(--dot-radius-card); }
+html[data-dot-theme] .taskbar { background: var(--dot-surface); border-color: var(--dot-border); box-shadow: var(--dot-shell-shadow); }
+html[data-dot-theme] .taskbar a.active .nav-symbol, html[data-dot-theme] .taskbar a.active small { color: var(--dot-accent); }
+html[data-dot-theme] .eyebrow { display: none; }
+html[data-dot-theme] .import-dropzone { border-color: var(--dot-border); }
+html[data-dot-theme] footer { display: flex; color: var(--dot-secondaryText); align-items: flex-start; padding-bottom: 96px; gap: 16px; }
+html[data-dot-theme] footer strong { color: var(--dot-text); font-size: 20px; letter-spacing: -.4px; }
+html[data-dot-theme] footer .dot-suite nav { padding: 4px 0; }
+@media (max-width: 600px) { html[data-dot-theme] footer { flex-wrap: wrap; } html[data-dot-theme] header h1 { font-size: 26px; } }
+
+html[data-dot-theme] :where(button, a, summary):active { opacity: .78; }
+html[data-dot-theme] :where(h1, h2, h3) { text-wrap: balance; }
+html[data-dot-theme] body input:not([type="checkbox"]):not([type="radio"]), html[data-dot-theme] body select, html[data-dot-theme] body textarea { border: 1px solid var(--dot-secondaryText); }
+
+html[data-dot-theme] body .import-dropzone span, html[data-dot-theme] body .dropzone span { color: var(--dot-secondaryText); }
+html[data-dot-theme] body .book-source, html[data-dot-theme] body .book-source label, html[data-dot-theme] body .book-source button, html[data-dot-theme] body .connection-grid label { font-size: 13px; letter-spacing: normal; text-transform: none; }
+html[data-dot-theme] body .shelf-filters button, html[data-dot-theme] body .view-controls button, html[data-dot-theme] body .book-view button { min-height: 36px; font-size: 13px; }
+html[data-dot-theme] body .section-head h3 { margin-top: 24px; margin-bottom: 8px; }
+html[data-dot-theme] body .epub-drop-copy span { color: var(--dot-secondaryText); font-size: 13px; }
+html[data-dot-theme] body #books #librarySort { border: 1px solid var(--dot-secondaryText); border-radius: var(--dot-radius-control); }
+html[data-dot-theme] body button { min-height: 36px; }
+html[data-dot-theme] body .taskbar small { font-size: 12px; line-height: 16px; letter-spacing: normal; }
+html[data-dot-theme] body #books .view-switch { height: 44px; align-items: center; }
+html[data-dot-theme] body #books .view-switch button { width: 36px; height: 36px; min-height: 36px; display: grid; place-items: center; line-height: 1; }

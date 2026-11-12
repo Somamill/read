@@ -1,4 +1,5 @@
 ## 0.3.9
+- Integrate dot. kit 1.1.0, including accessible dark accent and on-accent roles, preserving the current shared suite integration.
 - Apply dot. semantic colors, system typography, consistent controls and restrained motion across the dashboard, articles, settings and native reader. Keep explicit OLED black and add system-following appearance.
 - Focus navigation on Library, Articles, Highlights and Discover. Keep every secondary destination and keyboard command in the native More menu.
 - Share generated theme adapters with the iPhone app; include the dot. signature in About and Settings. Preserve app icons, identities, saved data and reader font choices.

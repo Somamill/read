@@ -29,6 +29,10 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/dot-theme.json
         buildPhase: resources
+      - path: Resources/Dashboard/dot-brand.css
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-adapter.css
+        buildPhase: resources
       - path: Resources/Dashboard/dot-tokens.css
         buildPhase: resources
       - path: Resources/Dashboard/dot-ui.css

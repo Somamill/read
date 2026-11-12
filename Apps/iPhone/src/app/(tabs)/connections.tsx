@@ -1,3 +1,4 @@
+import { DotSuite } from "../../components/DotSuite";
 import { importMacSetup } from "../../lib/pairing";
 import { ConnectionHealth } from "../../components/ConnectionHealth";
 import { syncReader } from "../../lib/readwise";
@@ -173,6 +174,8 @@ export default function Connections() {
         />
         {!!setupProgress && <Label small>{setupProgress}</Label>}
       </Card>
+      <DotSuite />
+
       <Card>
         <Label>Appearance</Label>
         {(["system", "black", "bright"] as const).map((theme) => (
@@ -386,11 +389,7 @@ export default function Connections() {
           standalone App Store release.
         </Label>
       </Card>
-    <Card>
-        <Label>read.</Label>
-        <Label small>Books, articles, and highlights.</Label>
-        <Label small>Part of dot.</Label>
-      </Card>
+    
     </Page>
   );
 }

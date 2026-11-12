@@ -23,7 +23,7 @@ let shelfBooks=[];
 // records and each card has expandable metadata; the rest stays one click away.
 const shelfPageSize=12;
 const systemAppearance=window.matchMedia('(prefers-color-scheme: dark)');
-function applyAppearance(){const dark=appearancePreference==='oled'||appearancePreference==='dark'||(appearancePreference==='system'&&systemAppearance.matches);document.documentElement.dataset.appearance=appearancePreference;document.documentElement.dataset.theme=dark?'dark':'light';const picker=document.getElementById('appearanceChoice');if(picker)picker.value=appearancePreference;post({type:'appearance',mode:appearancePreference,resolved:dark?'dark':'light'})}
+function applyAppearance(){const dark=appearancePreference==='oled'||appearancePreference==='dark'||(appearancePreference==='system'&&systemAppearance.matches);document.documentElement.dataset.appearance=appearancePreference;document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.dataset.dotTheme=dark?'dark':'light';const picker=document.getElementById('appearanceChoice');if(picker)picker.value=appearancePreference;post({type:'appearance',mode:appearancePreference,resolved:dark?'dark':'light'})}
 function setAppearance(value){appearancePreference=['bright','dark','oled','system'].includes(value)?value:'system';preferenceSet('shelfAppearance',appearancePreference);applyAppearance()}
 systemAppearance.addEventListener('change',()=>{if(appearancePreference==='system')applyAppearance()});
 applyAppearance();

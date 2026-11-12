@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add branding/dot
+          git add branding/dot Resources/Dashboard/dot-tokens.css Apps/iPhone/src/lib/dot-tokens.ts
           if git diff --cached --quiet; then
             echo 'Brand snapshot is current.'
             exit 0

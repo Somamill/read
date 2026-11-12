@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRead } from "../lib/context";
 import { Ionicons } from "@expo/vector-icons";
-import { dot } from "../lib/dot-theme";
+import { dotTokens as dot } from "../lib/dot-tokens";
 export function usePalette() {
   const { dark, settings } = useRead();
   const colors = dark ? dot.colors.dark : dot.colors.light;
@@ -20,8 +20,8 @@ export function usePalette() {
     ink: colors.text,
     muted: colors.secondaryText,
     line: colors.border,
-    blue: dark ? "#dfbd92" : dot.colors.accents.read,
-    onBlue: dark ? colors.background : colors.surface,
+    blue: dot.colors[dark ? "accentsDark" : "accents"].read,
+    onBlue: dot.colors.onAccent[dark ? "dark" : "light"],
   };
 }
 export function Page({
