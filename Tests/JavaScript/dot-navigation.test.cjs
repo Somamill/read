@@ -6,8 +6,9 @@ function dashboard(preference){
  dom.window.webkit={messageHandlers:{dashboard:{postMessage:value=>messages.push(value)}}};
  dom.window.matchMedia=()=>({matches:false,addEventListener:(_,handler)=>listeners.push(handler)});
  dom.window.IntersectionObserver=class{observe(){} disconnect(){}};
+ dom.window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};dom.window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
  if(preference)dom.window.localStorage.setItem('shelfAppearance',preference);
- try{for(const name of ['app.js','articles.js','discovery-reading.js'])vm.runInContext(fs.readFileSync('Resources/Dashboard/'+name,'utf8'),dom.getInternalVMContext(),{filename:name});}catch(error){dom.window.close();throw error;}
+ try{for(const name of ['reading-views.js','app.js','articles.js','discovery-reading.js','command-menu.js'])vm.runInContext(fs.readFileSync('Resources/Dashboard/'+name,'utf8'),dom.getInternalVMContext(),{filename:name});}catch(error){dom.window.close();throw error;}
  return {dom,messages,listeners};
 }
 test('all dashboard modules initialize and keep secondary destinations reachable',()=>{
@@ -33,4 +34,19 @@ test('system appearance follows changes while existing OLED and Bright choices r
   assert.equal(dom.window.document.documentElement.dataset.theme,choice==='bright'?'light':'dark');
  }finally{dom.window.close()}
  }
+});
+
+test('saved views, bulk selection and command navigation work without a cloud account',()=>{
+ const {dom,messages}=dashboard();try{
+  const doc=dom.window.document,view={id:'a'.repeat(32),name:'Quick science',query:'tag:science read:<10'};
+  dom.window.articleData({ok:true,views:[view],feeds:[],items:[{id:1,title:'A science essay',author:'Writer',status:'inbox',tags:'science',characters:1200,saved:Date.now()/1000,document_type:'article',fetched:1},{id:2,title:'Another essay',status:'inbox',tags:'other',characters:20000,saved:Date.now()/1000}]});
+  doc.querySelector('[data-reading-view]').click();assert.equal(doc.querySelectorAll('[data-article-card]').length,1);
+  doc.getElementById('toggleArticleSelection').click();doc.querySelector('[data-select-shown]').click();doc.querySelector('[data-bulk-status="archive"]').click();
+  assert.deepEqual(JSON.parse(JSON.stringify(messages.at(-1))),{type:'articles',action:'bulk',ids:[1],status:'archive'});
+  dom.window.readOpenCommandMenu();assert.ok(doc.querySelector('.command-dialog').open);
+  const input=doc.getElementById('commandQuery');input.value='Quick science';input.dispatchEvent(new dom.window.Event('input'));
+  assert.match(doc.getElementById('commandResults').textContent,/Quick science/);
+  const result=[...doc.querySelectorAll('[data-command]')].find(x=>x.textContent.includes('Saved reading view'));result.click();assert.equal(doc.querySelector('.command-dialog').open,false);
+  dom.window.readOpenCommandMenu();input.value='Articles';input.dispatchEvent(new dom.window.Event('input'));input.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));assert.ok(doc.getElementById('articles').classList.contains('visible'));assert.equal(doc.querySelector('.command-dialog').open,false);
+ }finally{dom.window.close()}
 });

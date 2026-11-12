@@ -30,3 +30,5 @@ fs.writeFileSync(
 
 // The same source is used by the desktop dashboard and mobile chrome.
 fs.copyFileSync(path.resolve(root, "../../branding/dot/tokens.ts"), path.join(root, "src/lib/dot-tokens.ts"));
+// read.'s own query engine is shared verbatim between web and native clients.
+fs.copyFileSync(path.join(desktop, "reading-views.js"), path.join(root, "src/lib/reading-views.js"));

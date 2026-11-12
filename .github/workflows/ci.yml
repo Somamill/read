@@ -36,6 +36,8 @@ jobs:
           python3 -m unittest discover -s Tests/Python -v
           node --check Resources/Dashboard/app.js
           node --check Resources/Dashboard/articles.js
+          node --check Resources/Dashboard/reading-views.js
+          node --check Resources/Dashboard/command-menu.js
           node --check Resources/Dashboard/article-extraction.js
           node --test Tests/JavaScript/*.test.cjs
           python3 -m py_compile Scripts/setup-apple-signing.py

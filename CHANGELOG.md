@@ -1,3 +1,15 @@
+## 0.4.0
+- Add account-free saved reading views with a bounded query parser shared with iPhone: phrases, Boolean grouping, tags, authors, types, source domains, read-time estimates, progress and relative dates.
+- Add a Cmd/Ctrl+K command menu for navigation, capture, saved views and local library search.
+- Add article multi-select and atomic bulk inbox/later/finish/star updates, with full selection validation.
+- Replace hundreds of per-field Docker invocations in the progress bridge with one bounded read-only Redis snapshot. Reuse the installer’s Python runtime and isolate service bytecode caches instead of forcing the Xcode Python stub.
+- Integrate the latest dot. 1.1.0 roles, including accessible dark accents, without duplicating mobile theme sources.
+- Record the public Readwise research, existing feature coverage and remaining integration limits.
+
+## iPhone preview 0.1.8
+- Add local reading views, shared metadata query semantics, unified search/action navigation, article tags/stars and bulk finish/inbox actions.
+- Preserve article tags and metadata during re-extraction; store character counts for estimated reading-time filters.
+
 ## 0.3.9
 - Integrate dot. kit 1.1.0, including accessible dark accent and on-accent roles, preserving the current shared suite integration.
 - Apply dot. semantic colors, system typography, consistent controls and restrained motion across the dashboard, articles, settings and native reader. Keep explicit OLED black and add system-following appearance.

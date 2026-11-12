@@ -110,3 +110,7 @@ read. is currently a macOS app. The shared core is structured to support a futur
 ## License
 
 read. is released under the [MIT License](LICENSE).
+
+### Focused reading workflows
+
+Use **⌘K** on Mac to find a page, save an article, open a saved reading view or search the local library. iPhone has a search action beside page titles. Articles support named metadata queries and explicit bulk inbox actions; views remain local to each device. See [Reading views](Documentation/READING_VIEWS.md) for query examples and [Readwise research](Documentation/Research/Readwise.md) for feature coverage and integration limits.

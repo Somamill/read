@@ -1,4 +1,5 @@
 import React from "react";
+import { router } from "expo-router";
 import {
   ScrollView,
   View,
@@ -27,10 +28,12 @@ export function usePalette() {
 export function Page({
   title,
   subtitle,
+  searchable = true,
   children,
 }: {
   title: string;
   subtitle?: string;
+  searchable?: boolean;
   children: React.ReactNode;
 }) {
   const p = usePalette(),
@@ -46,6 +49,7 @@ export function Page({
       }}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:16}}>
       <Text
         accessibilityRole="header"
         style={{
@@ -53,11 +57,14 @@ export function Page({
           fontWeight: "700",
           letterSpacing: -0.5,
           color: p.ink,
+          flex:1,
           marginTop: 10,
         }}
       >
         {title}
       </Text>
+      {searchable&&<Pressable accessibilityRole="button" accessibilityLabel="Search library and commands" onPress={()=>router.push("/search")} style={{padding:12,minWidth:44,minHeight:44,alignItems:"center",justifyContent:"center"}}><Ionicons name="search-outline" size={24} color={p.ink}/></Pressable>}
+      </View>
       {subtitle && (
         <Text
           style={{

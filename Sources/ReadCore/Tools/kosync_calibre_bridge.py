@@ -314,8 +314,56 @@ def automatic_book_match(title, author, identities, filename="", identifiers=Non
         return None
     return {"book_id": best["id"], "confidence": round(confidence, 4), "reason": reason}
 
-def redis_book_metadata(key):
-    fields = {name: redis("HGET", key, name) for name in ("metadata", "title", "author", "authors", "filename")}
+def redis_document_snapshot():
+    # One read-only Redis call replaces hundreds of Docker process launches.
+    # SCAN and hash reads are bounded; no user content becomes Lua source.
+    script = """
+local cursor = '0'
+local rows = {}
+local count = 0
+local bytes = 0
+repeat
+  local page = redis.call('SCAN', cursor, 'MATCH', ARGV[1], 'COUNT', 100)
+  cursor = page[1]
+  for _, key in ipairs(page[2]) do
+    count = count + 1
+    if count > 5000 then return redis.error_reply('Reading snapshot exceeds 5000 records') end
+    if redis.call('TYPE', key).ok == 'hash' then
+      local fields = redis.call('HGETALL', key)
+      local row = {}
+      for i = 1, #fields, 2 do
+        bytes = bytes + #fields[i] + #fields[i + 1]
+        if bytes > 16777216 then return redis.error_reply('Reading snapshot exceeds 16 MB') end
+        row[fields[i]] = fields[i + 1]
+      end
+      row._redis_key = key
+      if row.percentage then rows[#rows + 1] = row end
+    end
+  end
+until cursor == '0'
+return cjson.encode(rows)
+"""
+    raw = redis('EVAL', script, '0', f'user:{USERNAME}:document:*')
+    try:
+        rows = json.loads(raw)
+    except ValueError:
+        raise ValueError('Could not read sync records. Check the sync server and retry.') from None
+    if rows == {}: return {}
+    if not isinstance(rows, list) or len(rows)>5000:
+        raise ValueError('Invalid Redis reading snapshot')
+    prefix=f'user:{USERNAME}:document:'
+    result={}
+    for row in rows:
+        if not isinstance(row,dict):raise ValueError('Invalid Redis reading record')
+        key=str(row.get('_redis_key',''))
+        digest=key[len(prefix):].lower() if key.startswith(prefix) else ''
+        if not re.fullmatch(r'[a-f0-9]{32}',digest):continue
+        result[digest]={**row,'document':digest,'_redis_fields':dict(row)}
+    return result
+
+def redis_book_metadata(key, fields=None):
+    if fields is None:
+        fields = {name: redis("HGET", key, name) for name in ("metadata", "title", "author", "authors", "filename")}
     meta = {}
     if fields.get("metadata"):
         try:
@@ -572,35 +620,7 @@ def main():
         # user:<username>:document:<partial-md5>, not as separate keys with
         # field suffixes. Match the server's actual schema and read fields
         # with HGET.
-        keys = cmd([
-            DOCKER,
-            "exec", CONTAINER,
-            "redis-cli", "-n", "1",
-            "--scan",
-            "--pattern", f"user:{USERNAME}:document:*",
-        ]).stdout.splitlines()
-
-        # Combine the older Redis-backed KOSync endpoint with the newer local
-        # CrossPoint Sync database. Prefer the newest record for a document,
-        # while carrying any metadata the Redis version does not retain.
-        records = {}
-        for key in keys:
-            prefix = f"user:{USERNAME}:document:"
-            if not key.startswith(prefix):
-                continue
-            digest = key[len(prefix):].lower()
-            percentage = redis("HGET", key, "percentage")
-            if not percentage:
-                continue
-            records[digest] = {
-                "document": digest,
-                "percentage": percentage,
-                "progress": redis("HGET", key, "progress"),
-                "device": redis("HGET", key, "device"),
-                "device_id": redis("HGET", key, "device_id"),
-                "timestamp": redis("HGET", key, "timestamp"),
-                "_redis_key": key,
-            }
+        records = redis_document_snapshot()
         for record in crosspoint_progress_records():
             digest = str(record.get("document") or "").lower()
             if not digest or record.get("percentage") is None:
@@ -638,7 +658,7 @@ def main():
             filename = ""
 
             if book_id is None:
-                metadata = redis_book_metadata(record["_redis_key"]) if record.get("_redis_key") else {}
+                metadata = redis_book_metadata(record["_redis_key"],record.get("_redis_fields")) if record.get("_redis_key") else {}
                 stored = remote_metadata.get(digest.lower(), {})
                 for field in ("title", "author", "authors", "filename", "identifiers", "identifier", "isbn", "uuid"):
                     if not metadata.get(field) and stored.get(field):

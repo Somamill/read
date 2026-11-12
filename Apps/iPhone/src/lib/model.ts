@@ -7,6 +7,9 @@ export type Book = {
   html?: string;
   hasContent?: boolean;
   uri?: string;
+  characters?: number;
+  tags?: string[];
+  favorite?: boolean;
   sourceURL?: string;
   cover?: string;
   document?: string;

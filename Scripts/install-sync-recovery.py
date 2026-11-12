@@ -24,9 +24,9 @@ for name in ('sync_runtime_watchdog.py','shelf_config.py'):
     source=ROOT/'Sources/ReadCore/Tools'/name
     destination=scripts/name
     if source.resolve()!=destination.resolve():shutil.copy2(source,destination)
-value={'Label':label,'ProgramArguments':['/usr/bin/python3',str(scripts/'sync_runtime_watchdog.py')],
+value={'Label':label,'ProgramArguments':[sys.executable,str(scripts/'sync_runtime_watchdog.py')],
        'RunAtLoad':True,'StartInterval':120,'ProcessType':'Background',
-       'EnvironmentVariables':{'PATH':'/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'},
+       'EnvironmentVariables':{'PYTHONPYCACHEPREFIX':str(home/'Library/Caches/read/service-python'),'PATH':'/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'},
        'StandardOutPath':str(logs/'sync-runtime.stdout.log'),'StandardErrorPath':str(logs/'sync-runtime.stderr.log')}
 job.write_bytes(plistlib.dumps(value))
 subprocess.run(['launchctl','bootstrap',f'gui/{os.getuid()}',str(job)],check=True)

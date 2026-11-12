@@ -52,6 +52,7 @@ function Navigation() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="reader" />
+        <Stack.Screen name="search" />
         <Stack.Screen name="capture" />
       </Stack>
     </>

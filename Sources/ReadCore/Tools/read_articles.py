@@ -183,6 +183,7 @@ class Library:
             saved REAL NOT NULL, updated REAL NOT NULL, opened REAL DEFAULT 0,
             progress REAL DEFAULT 0, status TEXT DEFAULT 'inbox', tags TEXT DEFAULT '',
             favorite INTEGER DEFAULT 0, feed TEXT DEFAULT '', fetched INTEGER DEFAULT 1);
+          CREATE TABLE IF NOT EXISTS reading_views (id TEXT PRIMARY KEY,name TEXT NOT NULL,query TEXT NOT NULL,created REAL NOT NULL,updated REAL NOT NULL);
           CREATE TABLE IF NOT EXISTS article_aliases (url TEXT PRIMARY KEY,article INTEGER NOT NULL);
           CREATE TABLE IF NOT EXISTS file_readers (article INTEGER PRIMARY KEY,html TEXT NOT NULL,directory TEXT NOT NULL,chapters TEXT NOT NULL);
           CREATE TABLE IF NOT EXISTS images (article INTEGER,url TEXT,path TEXT,PRIMARY KEY(article,url));
@@ -198,7 +199,46 @@ class Library:
 
     def list(self):
         return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath,CASE WHEN content LIKE '%data-read-image=%' THEN 1 ELSE 0 END AS hasImages FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
-                'feeds': [dict(x) for x in self.db.execute('SELECT * FROM feeds ORDER BY title')]}
+                'feeds': [dict(x) for x in self.db.execute('SELECT * FROM feeds ORDER BY title')],
+                'views': [dict(x) for x in self.db.execute('SELECT * FROM reading_views ORDER BY name COLLATE NOCASE')]}
+
+    def save_view(self, payload):
+        import uuid
+        name = str(payload.get('name', '')).strip()
+        query = str(payload.get('query', '')).strip()
+        duplicate = self.db.execute('SELECT id FROM reading_views WHERE name=? AND query=?',(name,query)).fetchone() if not payload.get('id') else None
+        identifier = str(payload.get('id') or (duplicate[0] if duplicate else uuid.uuid4().hex))
+        if not name or len(name)>80 or not query or len(query)>1600:
+            raise ValueError('Use a view name under 80 characters and a query under 1,600 characters.')
+        if not re.fullmatch(r'[a-f0-9]{32}',identifier):
+            raise ValueError('Invalid saved view identifier.')
+        if self.db.execute('SELECT count(*) FROM reading_views').fetchone()[0]>=100 and not self.db.execute('SELECT 1 FROM reading_views WHERE id=?',(identifier,)).fetchone():
+            raise ValueError('Keep up to 100 saved views.')
+        stamp=time.time()
+        with self.db:
+            self.db.execute('INSERT INTO reading_views VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,query=excluded.query,updated=excluded.updated',(identifier,name,query,stamp,stamp))
+        return self.list()
+
+    def update_many(self, payload):
+        ids=payload.get('ids')
+        if not isinstance(ids,list) or not ids or len(ids)>200 or any(type(x) is not int or x<=0 for x in ids):
+            raise ValueError('Select between 1 and 200 articles.')
+        ids=list(dict.fromkeys(ids))
+        changes={k:payload[k] for k in ('status','favorite') if k in payload}
+        if not changes:raise ValueError('Choose an inbox action.')
+        if 'status' in changes and changes['status'] not in ('inbox','later','archive','trash'):
+            raise ValueError('Invalid article status.')
+        if 'favorite' in changes:
+            if changes['favorite'] not in (True,False,0,1):raise ValueError('Invalid star setting.')
+            changes['favorite']=int(bool(changes['favorite']))
+        marks=','.join('?' for _ in ids)
+        if self.db.execute('SELECT count(*) FROM articles WHERE id IN ('+marks+')',ids).fetchone()[0]!=len(ids):
+            raise ValueError('An article is no longer available. Refresh the selection.')
+        with self.db:
+            self.db.execute('UPDATE articles SET '+','.join(k+'=?' for k in changes)+',updated=? WHERE id IN ('+marks+')',[*changes.values(),time.time(),*ids])
+            if changes.get('status')=='archive':self.db.execute('UPDATE articles SET progress=1 WHERE id IN ('+marks+')',ids)
+            if changes.get('status')=='inbox':self.db.execute('UPDATE articles SET progress=0 WHERE progress>=0.97 AND id IN ('+marks+')',ids)
+        return self.list()
 
     def save(self, item):
         url = public_url(item.get('url', ''))
@@ -454,6 +494,11 @@ class Library:
 
     def dispatch(self, p):
         action = p.get('action','list')
+        if action=='save_view':return self.save_view(p)
+        if action=='delete_view':
+            with self.db:self.db.execute('DELETE FROM reading_views WHERE id=?',(str(p.get('id','')),))
+            return self.list()
+        if action=='bulk':return self.update_many(p)
         if action=='discover':return self.discover()
         if action=='recommend_books':return self.recommend_books()
         if action=='neighbor':

@@ -53,6 +53,25 @@ class BridgeFailureTests(unittest.TestCase):
         self.assertNotIn("private-value", output)
         self.assertNotIn("CalledProcessError", output)
 
+    def test_redis_snapshot_reads_all_fields_in_one_bounded_command(self):
+        bridge=self.bridge
+        key='user:'+bridge.USERNAME+':document:'+'a'*32
+        rows=[{'_redis_key':key,'percentage':'0.25','title':'日本語','metadata':json.dumps({'author':'Writer'})}]
+        with patch.object(bridge,'redis',return_value=json.dumps(rows)) as read:
+            result=bridge.redis_document_snapshot()
+        self.assertEqual(read.call_count,1)
+        self.assertEqual(read.call_args.args[0],'EVAL')
+        self.assertIn('5000',read.call_args.args[1])
+        record=result['a'*32]
+        with patch.object(bridge,'redis',side_effect=AssertionError('Unexpected extra Redis call')):
+            metadata=bridge.redis_book_metadata(key,record['_redis_fields'])
+        self.assertEqual(metadata,{'title':'日本語','author':'Writer'})
+        with patch.object(bridge,'redis',return_value='{}'):
+            self.assertEqual(bridge.redis_document_snapshot(),{})
+        for raw in ('null','[1]','not-json'):
+            with patch.object(bridge,'redis',return_value=raw):
+                with self.assertRaises((ValueError,TypeError)):bridge.redis_document_snapshot()
+
     def test_activity_history_preserves_real_syncs_without_command_noise(self):
         bridge = self.bridge
         bridge.log("BRIDGE START")

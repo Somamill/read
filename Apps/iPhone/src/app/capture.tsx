@@ -94,12 +94,14 @@ export default function Capture() {
                 );
                 const id = existing?.id || md5(item.url);
                 const b: Book = {
+                  ...existing,
                   id,
                   title: item.title,
                   author: item.author,
                   kind: "article",
                   sourceURL: item.url,
                   html: item.content,
+                  characters: item.content.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().length,
                   chapters: [],
                   progress: existing?.progress || 0,
                   finished: existing?.finished || false,

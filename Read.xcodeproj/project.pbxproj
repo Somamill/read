@@ -12,6 +12,7 @@
 		121C0D43ECC0090009977461 /* ReaderContentsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CF3444B3105FBF75D54178 /* ReaderContentsController.swift */; };
 		141E27ED3E864C21C64B858E /* PythonRuntime in Resources */ = {isa = PBXBuildFile; fileRef = 3070FBC65E0A7BD02E4D5874 /* PythonRuntime */; };
 		226C3CA80BB73AE81643B1A9 /* DotTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FBF53AFBBD890060BA26AD7 /* DotTheme.swift */; };
+		2328DB50CD0417F5A6DB0D90 /* command-menu.js in Resources */ = {isa = PBXBuildFile; fileRef = 728635CA8A2A86D6486C8C4A /* command-menu.js */; };
 		2E7A067775D574C4D5937469 /* read_articles.py in Resources */ = {isa = PBXBuildFile; fileRef = 76AB03E5F3AB31CE18B19A39 /* read_articles.py */; };
 		35002FC68148DEE9C3146396 /* reader-experience.js in Resources */ = {isa = PBXBuildFile; fileRef = 2C9FA43996BC682F3D965CAD /* reader-experience.js */; };
 		37C47E69DC6390923C23DCBB /* style.css in Resources */ = {isa = PBXBuildFile; fileRef = 4EF15F82053C334DEB0EEBE5 /* style.css */; };
@@ -20,6 +21,7 @@
 		3BAFFA343810CBC30859BC17 /* boox_wifi_reconnect.py in Resources */ = {isa = PBXBuildFile; fileRef = 726F61E9853C190711F0888D /* boox_wifi_reconnect.py */; };
 		3C60AD20B4F461A642FDB35D /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5AC95123A8E6277F76917E7D /* Sparkle */; };
 		3CAEF6A129EDEEC363A4B990 /* boox_settings.py in Resources */ = {isa = PBXBuildFile; fileRef = 28FB9CDCF752D8B3C7C1F2F5 /* boox_settings.py */; };
+		47139147C93EE9D7654F5AFE /* reading-views.js in Resources */ = {isa = PBXBuildFile; fileRef = B6B4498CDF484ACE81E7E17F /* reading-views.js */; };
 		494DC4D5A64268ADDEE82445 /* dot-adapter.css in Resources */ = {isa = PBXBuildFile; fileRef = D8514FF44CB3E7D85C3A00C0 /* dot-adapter.css */; };
 		562014685E78F5661051E5D5 /* kosync_calibre_bridge.py in Resources */ = {isa = PBXBuildFile; fileRef = 1FB78FB7936D5944C5AD5EFA /* kosync_calibre_bridge.py */; };
 		58B2835F2F45CE9ACC03CA50 /* dot-brand.css in Resources */ = {isa = PBXBuildFile; fileRef = FA447D97F288230E44EC6522 /* dot-brand.css */; };
@@ -76,6 +78,7 @@
 		5490F907B1738634FDAACDEF /* CalibreStackDashboard */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CalibreStackDashboard; path = .; sourceTree = SOURCE_ROOT; };
 		6F3268202555922677D4D42F /* AppIcon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AppIcon.png; sourceTree = "<group>"; };
 		726F61E9853C190711F0888D /* boox_wifi_reconnect.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = boox_wifi_reconnect.py; sourceTree = "<group>"; };
+		728635CA8A2A86D6486C8C4A /* command-menu.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "command-menu.js"; sourceTree = "<group>"; };
 		74C0D91B0659DBAE7786150F /* dot-ui.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "dot-ui.css"; sourceTree = "<group>"; };
 		76AB03E5F3AB31CE18B19A39 /* read_articles.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = read_articles.py; sourceTree = "<group>"; };
 		78D80322B27FF3646155F8C1 /* shelf_book_actions.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = shelf_book_actions.py; sourceTree = "<group>"; };
@@ -92,6 +95,7 @@
 		A90EA46B65DAAA0B89DF58ED /* article-extraction.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "article-extraction.js"; sourceTree = "<group>"; };
 		B2FC033AFA460A7FF7D42CC7 /* shelf_annotations.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = shelf_annotations.py; sourceTree = "<group>"; };
 		B55AC482E79AFECEC229B953 /* apple_books.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = apple_books.py; sourceTree = "<group>"; };
+		B6B4498CDF484ACE81E7E17F /* reading-views.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "reading-views.js"; sourceTree = "<group>"; };
 		BEE0F32731BC8DBBE885931E /* reader-links.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "reader-links.js"; sourceTree = "<group>"; };
 		D067F9ECB79C938D5BD89ABB /* epub_native.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = epub_native.py; sourceTree = "<group>"; };
 		D8514FF44CB3E7D85C3A00C0 /* dot-adapter.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = "dot-adapter.css"; sourceTree = "<group>"; };
@@ -173,6 +177,7 @@
 				A90EA46B65DAAA0B89DF58ED /* article-extraction.js */,
 				A75D0CECD5AB7D8719BBB6DE /* articles.css */,
 				9F37A76521C1FF02179282B1 /* articles.js */,
+				728635CA8A2A86D6486C8C4A /* command-menu.js */,
 				4CE39360593BBFFFB9A1174B /* discovery-reading.js */,
 				D8514FF44CB3E7D85C3A00C0 /* dot-adapter.css */,
 				FA447D97F288230E44EC6522 /* dot-brand.css */,
@@ -183,6 +188,7 @@
 				2C9FA43996BC682F3D965CAD /* reader-experience.js */,
 				BEE0F32731BC8DBBE885931E /* reader-links.js */,
 				3D8EB922C75D82D8EB27156E /* reader-style.css */,
+				B6B4498CDF484ACE81E7E17F /* reading-views.js */,
 				4EF15F82053C334DEB0EEBE5 /* style.css */,
 				A7042600B3DC833EF912A07C /* Vendor */,
 			);
@@ -322,6 +328,7 @@
 				3CAEF6A129EDEEC363A4B990 /* boox_settings.py in Resources */,
 				3BAFFA343810CBC30859BC17 /* boox_wifi_reconnect.py in Resources */,
 				A6AE7C0759C48518A66AB4E8 /* calibre_fts.py in Resources */,
+				2328DB50CD0417F5A6DB0D90 /* command-menu.js in Resources */,
 				6C034BE063BC51CEA710D5DF /* config.example.json in Resources */,
 				85FBF83036782EF55B555C81 /* discovery-reading.js in Resources */,
 				494DC4D5A64268ADDEE82445 /* dot-adapter.css in Resources */,
@@ -339,6 +346,7 @@
 				B52D093DA38ADBF008FFF113 /* reader-links.js in Resources */,
 				0FAA1F0604D51CEA738B8EEF /* reader-style.css in Resources */,
 				F0B80CE63AE20BBDBBC5B5D7 /* reader_book.py in Resources */,
+				47139147C93EE9D7654F5AFE /* reading-views.js in Resources */,
 				9804847C51C2F6B1AA2BAB08 /* readwise_reader_sync.py in Resources */,
 				9E9124246F8CB103DA1EA08E /* shelf_annotations.py in Resources */,
 				9484A146D962B5FEB3A4C069 /* shelf_book_actions.py in Resources */,
@@ -395,7 +403,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 60;
+				CURRENT_PROJECT_VERSION = 61;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -409,7 +417,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.9;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;
@@ -423,7 +431,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 60;
+				CURRENT_PROJECT_VERSION = 61;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -437,7 +445,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.3.9;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.shelf.dashboard;
 				PRODUCT_NAME = read;
 				SDKROOT = macosx;
