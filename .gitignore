@@ -44,3 +44,9 @@ node_modules/
 # Local design-audit captures
 .hallmark/shots/
 .hallmark/before/
+
+# Signing credentials are generated locally and never committed.
+**/credentials.json
+*.p12
+*.mobileprovision
+*.provisionprofile
