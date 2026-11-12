@@ -4,6 +4,7 @@ import fcntl
 import difflib
 import hashlib
 import json
+import math
 import os
 import re
 import sqlite3
@@ -447,6 +448,57 @@ def write_json_atomic(path, payload):
         if os.path.exists(temp_path):
             os.unlink(temp_path)
 
+def sync_article_progress(records):
+    """Resolve only exact saved URL identities; never infer a book from a position."""
+    database = os.path.join(STATE, "articles", "articles.sqlite")
+    if not os.path.isfile(database):
+        return set(), 0
+    connection = sqlite3.connect(database, timeout=10)
+    try:
+        # The deployed bridge must remain standalone; its article helper is bundled
+        # with the GUI, not necessarily installed next to this background script.
+        connection.execute("BEGIN IMMEDIATE")
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(articles)")}
+        if 'progress_updated' not in columns:
+            connection.execute("ALTER TABLE articles ADD COLUMN progress_updated REAL DEFAULT 0")
+            connection.execute("UPDATE articles SET progress_updated=opened WHERE progress>0")
+        identities = {}
+        # Alias identities are accepted, but canonical URLs win equal-time ties.
+        for row in connection.execute("SELECT url,article FROM article_aliases"):
+            identities[hashlib.md5(row[0].encode()).hexdigest()] = (row[1], False)
+        for row in connection.execute("SELECT id,url FROM articles"):
+            identities[hashlib.md5(row[1].encode()).hexdigest()] = (row[0], True)
+        known = set(identities).intersection(records)
+        latest = {}
+        for digest in sorted(known):
+            record = records[digest]
+            try:
+                percentage = float(record.get("percentage"))
+                stamp = float(record.get("timestamp"))
+                if stamp > 100_000_000_000:
+                    stamp /= 1000  # Some clients send milliseconds.
+                if not (math.isfinite(percentage) and 0 <= percentage <= 1
+                        and math.isfinite(stamp) and 0 < stamp <= time.time() + 300):
+                    continue
+            except (TypeError, ValueError, OverflowError):
+                continue
+            identifier, canonical = identities[digest]
+            candidate = (stamp, canonical, percentage)
+            if identifier not in latest or candidate[:2] > latest[identifier][:2]:
+                latest[identifier] = candidate
+        changed = 0
+        with connection:
+            for identifier, (stamp, _, percentage) in latest.items():
+                status = 'archive' if percentage >= .97 else 'later' if percentage > 0 else 'inbox'
+                changed += connection.execute(
+                    "UPDATE articles SET progress=?,progress_updated=?,opened=max(coalesce(opened,0),?),status=? "
+                    "WHERE id=? AND status!='trash' AND coalesce(progress_updated,0)<?",
+                    (percentage, stamp, stamp, status, identifier, stamp)).rowcount
+        return known, changed
+    finally:
+        connection.close()
+
+
 def main():
 
     os.makedirs(STATE, mode=0o700, exist_ok=True)
@@ -639,11 +691,16 @@ def main():
                 for field in ("title", "author", "filename"):
                     previous[field] = previous.get(field) or record.get(field)
 
+        article_documents, articles_updated = sync_article_progress(records)
+        if articles_updated:
+            log(f"Synced progress for {articles_updated} saved articles.")
         found = len(records)
         latest_by_book = {}
         unmatched = []
 
         for digest, record in records.items():
+            if digest in article_documents:
+                continue
             percentage = record.get("percentage")
             progress = record.get("progress")
             device = record.get("device")
@@ -825,7 +882,8 @@ def main():
             f"BRIDGE END books={len(books)} "
             f"md5_created={md5_count} "
             f"documents={found} matched={len(latest_by_book)} "
-            f"updated={changed_books} unchanged={unchanged_books}"
+            f"updated={changed_books} unchanged={unchanged_books} "
+            f"article_documents={len(article_documents)} articles_updated={articles_updated}"
         )
 
     except subprocess.TimeoutExpired:

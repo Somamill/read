@@ -37,3 +37,7 @@ Keep the dot. content-first interface rather than reproducing Reader's branding.
 ## Runtime check discovered during the audit
 
 The existing bridge repeatedly launched Docker for individual Redis fields. A bounded read-only snapshot now retrieves all fields in one call, preserving matching and metadata. A live snapshot read 60 records in 0.12 seconds. The local container runtime also required recovery; a completed bridge pass afterward matched 36 records. Container health alone is not proof of sync completion.
+
+### Article progress reconciliation
+
+The desktop bridge now routes exact MD5 identities of saved article URLs and their redirects to the local article database, rather than reporting them as unmatched Calibre books. A dedicated progress timestamp prevents opening an article from overriding a newer device position. Conflicts use the newest valid timestamp; trash is preserved. This does not translate incompatible EPUB, PDF page or text-location coordinates between editions.

@@ -74,6 +74,8 @@ articleSection.addEventListener('click',e=>{
  if(d.articleUnsubscribe)articlePost('unsubscribe',{url:d.articleUnsubscribe});
 });
 setInterval(()=>{if(activePage==='articles'&&!document.hidden)articlePost('refresh')},900000);
+// Refresh local progress without refetching feeds or interrupting an editor.
+setInterval(()=>{if(['books','articles','statistics'].includes(activePage)&&!document.hidden&&!document.activeElement?.matches('input,textarea,[contenteditable=true]'))articlePost('list')},60000);
 renderArticles();
 
 window.articleCoverLoaded=value=>{for(const image of document.querySelectorAll('img[data-article-cover]'))if(Number(image.dataset.articleCover)===value.id){if(value.data)image.src=value.data;else image.remove()}};

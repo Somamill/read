@@ -1,4 +1,6 @@
 ## 0.4.0
+
+- Saved articles now reconcile exact URL and redirect identities with the sync servers. Newer reading positions win independently of when an article was opened; deleted articles stay deleted. Local progress refreshes without refetching feeds.
 - Add account-free saved reading views with a bounded query parser shared with iPhone: phrases, Boolean grouping, tags, authors, types, source domains, read-time estimates, progress and relative dates.
 - Add a Cmd/Ctrl+K command menu for navigation, capture, saved views and local library search.
 - Add article multi-select and atomic bulk inbox/later/finish/star updates, with full selection validation.

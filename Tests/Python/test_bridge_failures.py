@@ -29,6 +29,52 @@ class BridgeFailureTests(unittest.TestCase):
                 self.bridge = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(self.bridge)
 
+    def test_article_sync_uses_exact_aliases_and_newest_progress_without_resurrecting_trash(self):
+        import hashlib
+        tools = Path(__file__).resolve().parents[2] / "Sources/ReadCore/Tools"
+        with patch.object(sys, "path", [str(tools)] + sys.path):
+            from read_articles import Library
+            library = Library(Path(self.bridge.STATE) / "articles")
+            self.addCleanup(library.db.close)
+            library.db.execute("INSERT INTO articles(id,url,title,content,text,saved,updated,opened,progress,progress_updated,status,tags,favorite) VALUES(1,'https://example.org/story','Story','','',1,1,900,0.2,100,'later','keep',1)")
+            library.db.execute("INSERT INTO article_aliases VALUES('https://example.org/old',1)")
+            library.db.commit()
+            canonical=hashlib.md5(b'https://example.org/story').hexdigest()
+            alias=hashlib.md5(b'https://example.org/old').hexdigest()
+            records={canonical:{'percentage':'.4','timestamp':200},alias:{'percentage':'.98','timestamp':300000},'a'*32:{'percentage':'.8','timestamp':300}}
+            # Milliseconds are recognized only at realistic epoch magnitudes.
+            records[alias]['timestamp']=300
+            known,changed=self.bridge.sync_article_progress(records)
+            self.assertEqual(known,{canonical,alias});self.assertEqual(changed,1)
+            row=library.article(1)
+            self.assertEqual((row['progress'],row['progress_updated'],row['opened'],row['status'],row['tags'],row['favorite']),(.98,300,900,'archive','keep',1))
+            self.assertEqual(self.bridge.sync_article_progress(records)[1],0)
+            records[alias]={'percentage':'.1','timestamp':250}
+            self.assertEqual(self.bridge.sync_article_progress(records)[1],0)
+            library.db.execute("UPDATE articles SET status='trash'");library.db.commit()
+            records[canonical]={'percentage':'.5','timestamp':400}
+            self.assertEqual(self.bridge.sync_article_progress(records)[1],0)
+            self.assertEqual(library.article(1)['status'],'trash')
+
+    def test_article_sync_handles_missing_database_invalid_values_and_canonical_ties(self):
+        import hashlib
+        self.assertEqual(self.bridge.sync_article_progress({}), (set(),0))
+        tools = Path(__file__).resolve().parents[2] / "Sources/ReadCore/Tools"
+        with patch.object(sys, "path", [str(tools)] + sys.path):
+            from read_articles import Library
+            library=Library(Path(self.bridge.STATE)/'articles');self.addCleanup(library.db.close)
+            library.db.execute("INSERT INTO articles(id,url,title,content,text,saved,updated) VALUES(1,'https://example.org/story','Story','','',1,1)")
+            library.db.execute("INSERT INTO article_aliases VALUES('https://example.org/old',1)");library.db.commit()
+            canonical=hashlib.md5(b'https://example.org/story').hexdigest();alias=hashlib.md5(b'https://example.org/old').hexdigest()
+            for value in ('NaN','Infinity','-1','1.2',None):
+                self.assertEqual(self.bridge.sync_article_progress({canonical:{'percentage':value,'timestamp':200}})[1],0)
+            for stamp in ('NaN','Infinity',-1,None,1e20):
+                self.assertEqual(self.bridge.sync_article_progress({canonical:{'percentage':.2,'timestamp':stamp}})[1],0)
+            records={canonical:{'percentage':.4,'timestamp':1700000000000},alias:{'percentage':.9,'timestamp':1700000000}}
+            self.assertEqual(self.bridge.sync_article_progress(records)[1],1)
+            self.assertEqual(library.article(1)['progress'],.4)
+            self.assertEqual(library.article(1)['progress_updated'],1700000000)
+
     def test_timeout_reports_failure_without_command_credentials_and_releases_lock(self):
         bridge = self.bridge
         failure = subprocess.TimeoutExpired(["calibredb", "--password", "private-value"], 150)

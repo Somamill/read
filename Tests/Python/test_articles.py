@@ -24,6 +24,27 @@ class ArticleTests(unittest.TestCase):
     def save(self,**changes):
         return self.lib.save({'url':'https://example.org/story','title':'A worthwhile story','content':'<p>Thoughtful writing with enough words to make a readable offline article.</p>',**changes})
 
+    def test_legacy_progress_timestamp_migrates_without_resetting_position(self):
+        identifier=self.save()
+        self.lib.db.execute('UPDATE articles SET progress=.5,opened=123 WHERE id=?',(identifier,))
+        self.lib.db.execute('ALTER TABLE articles DROP COLUMN progress_updated');self.lib.db.commit()
+        migrated=articles.Library(self.lib.root);self.addCleanup(migrated.db.close)
+        self.assertEqual(migrated.article(identifier)['progress_updated'],123)
+        migrated.db.execute('UPDATE articles SET opened=456');migrated.db.commit()
+        again=articles.Library(self.lib.root);self.addCleanup(again.db.close)
+        self.assertEqual(again.article(identifier)['progress_updated'],123)
+
+    def test_open_does_not_claim_a_new_reading_position(self):
+        identifier=self.save()
+        with patch.object(articles.time,'time',return_value=100):
+            self.lib.dispatch({'action':'progress','id':identifier,'percentage':.4})
+        with patch.object(articles.time,'time',return_value=200):
+            self.lib.open(identifier)
+        row=self.lib.article(identifier)
+        self.assertEqual((row['opened'],row['progress_updated']),(200,100))
+        self.lib.dispatch({'action':'bulk','ids':[identifier],'status':'archive'})
+        self.assertGreater(self.lib.article(identifier)['progress_updated'],100)
+
     def test_views_persist_without_changing_articles(self):
         identifier=self.save()
         before=self.lib.article(identifier)

@@ -191,14 +191,17 @@ class Library:
           CREATE TABLE IF NOT EXISTS feeds (url TEXT PRIMARY KEY,title TEXT NOT NULL,
             checked REAL DEFAULT 0,error TEXT DEFAULT '');
         ''')
+        self.db.execute('BEGIN IMMEDIATE')
         columns={row[1] for row in self.db.execute('PRAGMA table_info(articles)')}
-        for name,definition in [('published','REAL DEFAULT 0'),('document_type',"TEXT DEFAULT 'article'")]:
+        for name,definition in [('published','REAL DEFAULT 0'),('document_type',"TEXT DEFAULT 'article'"),('progress_updated','REAL DEFAULT 0')]:
             if name not in columns:self.db.execute('ALTER TABLE articles ADD COLUMN '+name+' '+definition)
+        if 'progress_updated' not in columns:
+            self.db.execute('UPDATE articles SET progress_updated=opened WHERE progress>0')
         self.db.commit()
         (self.root / 'articles.sqlite').chmod(0o600)
 
     def list(self):
-        return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath,CASE WHEN content LIKE '%data-read-image=%' THEN 1 ELSE 0 END AS hasImages FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
+        return {'ok': True, 'items': [dict(x) for x in self.db.execute("SELECT id,url,title,author,site,excerpt,language,saved,updated,opened,progress,progress_updated,status,tags,favorite,feed,fetched,published,document_type,length(text) AS characters,(SELECT path FROM images WHERE article=articles.id LIMIT 1) AS coverPath,CASE WHEN content LIKE '%data-read-image=%' THEN 1 ELSE 0 END AS hasImages FROM articles ORDER BY CASE WHEN feed!='' AND published>0 THEN published ELSE saved END DESC,id DESC LIMIT 2000")],
                 'feeds': [dict(x) for x in self.db.execute('SELECT * FROM feeds ORDER BY title')],
                 'views': [dict(x) for x in self.db.execute('SELECT * FROM reading_views ORDER BY name COLLATE NOCASE')]}
 
@@ -236,8 +239,8 @@ class Library:
             raise ValueError('An article is no longer available. Refresh the selection.')
         with self.db:
             self.db.execute('UPDATE articles SET '+','.join(k+'=?' for k in changes)+',updated=? WHERE id IN ('+marks+')',[*changes.values(),time.time(),*ids])
-            if changes.get('status')=='archive':self.db.execute('UPDATE articles SET progress=1 WHERE id IN ('+marks+')',ids)
-            if changes.get('status')=='inbox':self.db.execute('UPDATE articles SET progress=0 WHERE progress>=0.97 AND id IN ('+marks+')',ids)
+            if changes.get('status')=='archive':self.db.execute('UPDATE articles SET progress=1,progress_updated=? WHERE id IN ('+marks+')',[time.time(),*ids])
+            if changes.get('status')=='inbox':self.db.execute('UPDATE articles SET progress=0,progress_updated=? WHERE progress>=0.97 AND id IN ('+marks+')',[time.time(),*ids])
         return self.list()
 
     def save(self, item):
@@ -524,7 +527,7 @@ class Library:
         if action=='progress':
             percentage = float(p['percentage'])
             if not 0 <= percentage <= 1: raise ValueError('Invalid reading position.')
-            self.db.execute("UPDATE articles SET progress=?,opened=?,status=CASE WHEN ?>=0.97 THEN 'archive' WHEN status='inbox' THEN 'later' ELSE status END WHERE id=?",(percentage,time.time(),percentage,int(p['id']))); self.db.commit()
+            self.db.execute("UPDATE articles SET progress=?,opened=?,progress_updated=?,status=CASE WHEN ?>=0.97 THEN 'archive' WHEN status='inbox' THEN 'later' ELSE status END WHERE id=?",(percentage,time.time(),time.time(),percentage,int(p['id']))); self.db.commit()
         if action=='update':
             for field in ('status','tags','favorite'):
                 if field not in p: continue
@@ -532,8 +535,8 @@ class Library:
                 if field=='status' and value not in ('inbox','later','archive','trash'): raise ValueError('Invalid article status.')
                 if field=='favorite': value = int(bool(value))
                 self.db.execute('UPDATE articles SET '+field+'=? WHERE id=?',(str(value)[:500],int(p['id'])))
-                if field=='status' and value=='archive': self.db.execute('UPDATE articles SET progress=1 WHERE id=?',(int(p['id']),))
-                if field=='status' and value=='inbox': self.db.execute('UPDATE articles SET progress=0 WHERE id=? AND progress>=0.97',(int(p['id']),))
+                if field=='status' and value=='archive': self.db.execute('UPDATE articles SET progress=1,progress_updated=? WHERE id=?',(time.time(),int(p['id'])))
+                if field=='status' and value=='inbox': self.db.execute('UPDATE articles SET progress=0,progress_updated=? WHERE id=? AND progress>=0.97',(time.time(),int(p['id'])))
             self.db.commit()
         if action=='subscribe': self.refresh_feed(p.get('url',''),force=True)
         if action=='refresh':
