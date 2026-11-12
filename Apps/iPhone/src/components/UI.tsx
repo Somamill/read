@@ -1,3 +1,4 @@
+import { dotTokens } from "../lib/dot-tokens";
 import React from "react";
 import {
   ScrollView,
@@ -12,14 +13,12 @@ import { useRead } from "../lib/context";
 import { Ionicons } from "@expo/vector-icons";
 export function usePalette() {
   const { dark } = useRead();
+  const colors = dotTokens.colors[dark ? "dark" : "light"];
   return {
-    bg: dark ? "#000" : "#f7f7f9",
-    card: dark ? "#141416" : "#fff",
-    ink: dark ? "#f5f5f7" : "#18181a",
-    muted: dark ? "#a4a4ab" : "#66666d",
-    line: dark ? "#29292e" : "#e2e2e8",
-    blue: dark ? "#85b9ff" : "#075ccc",
-    onBlue: dark ? "#00152c" : "#fff",
+    bg: dark ? "#000" : colors.background,
+    card: colors.surface, ink: colors.text, muted: colors.secondaryText, line: colors.border,
+    blue: dotTokens.colors[dark ? "accentsDark" : "accents"].read,
+    onBlue: dotTokens.colors.onAccent[dark ? "dark" : "light"],
   };
 }
 export function Page({
@@ -47,9 +46,9 @@ export function Page({
       <Text
         accessibilityRole="header"
         style={{
-          fontSize: 36,
+          fontSize: 28,
           fontWeight: "700",
-          letterSpacing: -1,
+          letterSpacing: -0.6,
           color: p.ink,
           marginTop: 10,
         }}
@@ -85,7 +84,7 @@ export function Card({
       style={[
         {
           padding: 18,
-          borderRadius: 24,
+          borderRadius: dotTokens.radius.card,
           backgroundColor: p.card,
           borderWidth: 1,
           borderColor: p.line,
@@ -142,7 +141,7 @@ export function Button({
       style={({ pressed }) => ({
         paddingVertical: 14,
         paddingHorizontal: 18,
-        borderRadius: 16,
+        borderRadius: dotTokens.radius.control,
         backgroundColor: secondary ? p.bg : p.blue,
         opacity: disabled ? 0.4 : pressed ? 0.65 : 1,
         flexDirection: "row",
@@ -200,7 +199,7 @@ export function Field({
           backgroundColor: p.bg,
           color: p.ink,
           padding: 14,
-          borderRadius: 13,
+          borderRadius: dotTokens.radius.control,
           fontSize: 16,
           borderWidth: 1,
           borderColor: p.line,

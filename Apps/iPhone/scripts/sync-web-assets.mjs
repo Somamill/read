@@ -27,3 +27,6 @@ fs.writeFileSync(
     JSON.stringify(read("purify.min.js")) +
     ";\n",
 );
+
+// The same source is used by the desktop dashboard and mobile chrome.
+fs.copyFileSync(path.resolve(root, "../../branding/dot/tokens.ts"), path.join(root, "src/lib/dot-tokens.ts"));
