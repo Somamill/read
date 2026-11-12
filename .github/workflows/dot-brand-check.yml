@@ -25,3 +25,7 @@ jobs:
               assert path.resolve().is_relative_to(root.resolve())
               assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name
           PYCODE
+      - name: Verify bundled runtime tokens match the snapshot
+        run: |
+          cmp branding/dot/tokens.css Resources/Dashboard/dot-tokens.css
+          cmp branding/dot/tokens.ts Apps/iPhone/src/lib/dot-tokens.ts

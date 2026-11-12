@@ -29,6 +29,10 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/style.css
         buildPhase: resources
+      - path: Resources/Dashboard/dot-tokens.css
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-brand.css
+        buildPhase: resources
       - path: Resources/Dashboard/Vendor
         type: folder
         buildPhase: resources
@@ -112,8 +116,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.7
-        CURRENT_PROJECT_VERSION: 58
+        MARKETING_VERSION: 0.3.8
+        CURRENT_PROJECT_VERSION: 59
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES

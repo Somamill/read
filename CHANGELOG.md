@@ -1,3 +1,16 @@
+## [0.3.8] - 2026-11-12
+
+### Changed
+- Apply dot. shared typography, spacing, controls and warm reading accents in Bright and OLED appearances.
+- Add accessible suite discovery and companion project links; bundle the new styles in both Mac build paths.
+- Export the shared tokens into runtime assets whenever the brand snapshot updates.
+
+## iPhone preview [0.1.7] - 2026-11-12
+
+### Changed
+- Use shared paper/amber palettes, control shapes and heading sizes while preserving OLED and reader font preferences.
+- Add dot. companion discovery to Connections.
+
 ## 0.3.7
 - Recover BOOX Wi-Fi debugging automatically when an explicitly configured, already-authorized tablet reconnects over USB after reboot. Detect its current Wi-Fi address and avoid restarting an active TCP debugging session.
 - Save changed endpoints atomically in private configuration. Keep existing authorization requirements and bounded five-minute reconnection checks.
