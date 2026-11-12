@@ -1,6 +1,6 @@
 # dot. adoption — 0.3.9 / iPhone 0.1.7
 
-Shared kit 1.1.0 drives generated desktop CSS, native JSON and mobile TypeScript adapters. Library, articles, discovery, highlights, setup, connections and tools use one semantic surface/control vocabulary. Native reader automatic colors match the kit; selected fonts and explicit OLED remain available.
+Shared kit 1.1.1 drives generated desktop CSS, native JSON and mobile TypeScript adapters. Library, articles, discovery, highlights, setup, connections and tools use one semantic surface/control vocabulary. Native reader automatic colors match the kit; selected fonts and explicit OLED remain available.
 
 Four content destinations plus More replace the crowded taskbar. Secondary routes remain available for native menus and keyboard commands. Obsolete sidebar-only CSS and fourteen old paint-priority overrides were removed. Historical layout is isolated in a lower cascade layer rather than deleting functioning operational tools. App icon packages, identities, accounts and saved files are retained.
 

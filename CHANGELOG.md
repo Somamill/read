@@ -3,7 +3,7 @@
 - Add a Cmd/Ctrl+K command menu for navigation, capture, saved views and local library search.
 - Add article multi-select and atomic bulk inbox/later/finish/star updates, with full selection validation.
 - Replace hundreds of per-field Docker invocations in the progress bridge with one bounded read-only Redis snapshot. Reuse the installer’s Python runtime and isolate service bytecode caches instead of forcing the Xcode Python stub.
-- Integrate the latest dot. 1.1.0 roles, including accessible dark accents, without duplicating mobile theme sources.
+- Integrate the latest dot. 1.1.1 roles, including accessible dark accents, without duplicating mobile theme sources.
 - Record the public Readwise research, existing feature coverage and remaining integration limits.
 
 ## iPhone preview 0.1.8

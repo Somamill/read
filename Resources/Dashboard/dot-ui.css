@@ -59,7 +59,7 @@ html footer{color:var(--muted);border-top:1px solid var(--line);font-size:13px;p
 html .page:focus{outline:none!important}
 html .page .book-finished{background:var(--glass-surface)!important}
 html .book-source-badges small{font-size:12px!important}
-html .btn:active,html .small-btn:active,html .taskbar a:active{opacity:.75}
+html .btn:active,html .small-btn:active,html .taskbar a:active{opacity:1;border-color:var(--dot-accent)}
 html header h1{text-wrap:balance}
 html .taskbar [data-page="books"]{order:0}html .taskbar [data-page="articles"]{order:1}html .taskbar [data-page="highlights"]{order:2}html .taskbar [data-page="discover"]{order:3}html .taskbar-more{order:4}
 html .epub-drop-zone{background:var(--glass-surface);border-color:var(--line);color:var(--ink);border-radius:var(--dot-radius-card)}

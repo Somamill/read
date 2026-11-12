@@ -153,7 +153,7 @@ export function Button({
         paddingHorizontal: 18,
         borderRadius: dot.radius.control,
         backgroundColor: secondary ? p.bg : p.blue,
-        opacity: disabled ? 0.4 : dotTokens.interaction.pressedOpacity,
+        opacity: disabled ? 0.4 : dot.interaction.pressedOpacity,
         borderWidth: 1,
         borderColor: pressed ? (secondary ? p.ink : p.onBlue) : "transparent",
         flexDirection: "row",
