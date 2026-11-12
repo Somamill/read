@@ -1,4 +1,5 @@
 ## 0.3.8
+- Align iPhone dependencies with the current Expo SDK 58 patch recommendations so the preview validation check stays compatible.
 - Repair missing EPUB 3 SVG manifest declarations on a staged copy, accepting the result only after EPUBCheck succeeds and preserving an exact original backup. Other validation failures remain held for review.
 - Include an idempotent installer for the existing import validation gate, keeping the normal malware scan, Calibre import and sync fingerprint workflow.
 

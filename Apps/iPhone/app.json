@@ -16,7 +16,10 @@
       "expo-secure-store",
       "expo-sqlite",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "expo-audio",
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": false
