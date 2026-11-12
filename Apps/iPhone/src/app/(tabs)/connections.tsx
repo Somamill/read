@@ -386,6 +386,11 @@ export default function Connections() {
           standalone App Store release.
         </Label>
       </Card>
+    <Card>
+        <Label>read.</Label>
+        <Label small>Books, articles, and highlights.</Label>
+        <Label small>Part of dot.</Label>
+      </Card>
     </Page>
   );
 }

@@ -27,6 +27,12 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/AppIcon.png
         buildPhase: resources
+      - path: Resources/Dashboard/dot-theme.json
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-tokens.css
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-ui.css
+        buildPhase: resources
       - path: Resources/Dashboard/style.css
         buildPhase: resources
       - path: Resources/Dashboard/Vendor
@@ -114,8 +120,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.8
-        CURRENT_PROJECT_VERSION: 59
+        MARKETING_VERSION: 0.3.9
+        CURRENT_PROJECT_VERSION: 60
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES

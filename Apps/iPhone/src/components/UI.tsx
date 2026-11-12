@@ -10,16 +10,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRead } from "../lib/context";
 import { Ionicons } from "@expo/vector-icons";
+import { dot } from "../lib/dot-theme";
 export function usePalette() {
-  const { dark } = useRead();
+  const { dark, settings } = useRead();
+  const colors = dark ? dot.colors.dark : dot.colors.light;
   return {
-    bg: dark ? "#000" : "#f7f7f9",
-    card: dark ? "#141416" : "#fff",
-    ink: dark ? "#f5f5f7" : "#18181a",
-    muted: dark ? "#a4a4ab" : "#66666d",
-    line: dark ? "#29292e" : "#e2e2e8",
-    blue: dark ? "#85b9ff" : "#075ccc",
-    onBlue: dark ? "#00152c" : "#fff",
+    bg: settings.theme === "black" ? "#000000" : colors.background,
+    card: colors.surface,
+    ink: colors.text,
+    muted: colors.secondaryText,
+    line: colors.border,
+    blue: dark ? "#dfbd92" : dot.colors.accents.read,
+    onBlue: dark ? colors.background : colors.surface,
   };
 }
 export function Page({
@@ -47,9 +49,9 @@ export function Page({
       <Text
         accessibilityRole="header"
         style={{
-          fontSize: 36,
+          fontSize: 28,
           fontWeight: "700",
-          letterSpacing: -1,
+          letterSpacing: -0.5,
           color: p.ink,
           marginTop: 10,
         }}
@@ -85,7 +87,7 @@ export function Card({
       style={[
         {
           padding: 18,
-          borderRadius: 24,
+          borderRadius: dot.radius.card,
           backgroundColor: p.card,
           borderWidth: 1,
           borderColor: p.line,
@@ -142,7 +144,7 @@ export function Button({
       style={({ pressed }) => ({
         paddingVertical: 14,
         paddingHorizontal: 18,
-        borderRadius: 16,
+        borderRadius: dot.radius.control,
         backgroundColor: secondary ? p.bg : p.blue,
         opacity: disabled ? 0.4 : pressed ? 0.65 : 1,
         flexDirection: "row",

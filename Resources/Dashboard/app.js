@@ -1,5 +1,5 @@
 const titles={
-  books:['My books','Your books and reading progress in one place.'],
+  books:['Library','Your books and reading progress in one place.'],
   discover:['Discover','Stories, books, and ideas worth returning to.'],
   statistics:['Reading statistics','Progress, reading activity and connected tracking sources.'],
   services:['Operations','Service health, scheduled work and direct controls.'],
@@ -17,14 +17,15 @@ let bookSearch='',bookShelfFilter=savedBookShelfFilter==='all'?'library':savedBo
 if(savedBookShelfFilter==='all')preferenceSet('shelfBookFilter','library');
 const post=o=>window.webkit.messageHandlers.dashboard.postMessage(o);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-let appearancePreference=preferenceGet('shelfAppearance')==='bright'?'bright':'oled';
+let appearancePreference=['bright','dark','oled','system'].includes(preferenceGet('shelfAppearance'))?preferenceGet('shelfAppearance'):'system';
 let shelfBooks=[];
 // Keep the initial render small. Calibre metadata can contain thousands of
 // records and each card has expandable metadata; the rest stays one click away.
 const shelfPageSize=12;
 const systemAppearance=window.matchMedia('(prefers-color-scheme: dark)');
-function applyAppearance(){const dark=appearancePreference==='oled';document.documentElement.dataset.appearance=appearancePreference;document.documentElement.dataset.theme=dark?'dark':'light';const picker=document.getElementById('appearanceChoice');if(picker)picker.value=dark?'oled':'bright';post({type:'appearance',mode:appearancePreference,resolved:dark?'dark':'light'})}
-function setAppearance(value){appearancePreference=value==='bright'?'bright':'oled';preferenceSet('shelfAppearance',appearancePreference);applyAppearance()}
+function applyAppearance(){const dark=appearancePreference==='oled'||appearancePreference==='dark'||(appearancePreference==='system'&&systemAppearance.matches);document.documentElement.dataset.appearance=appearancePreference;document.documentElement.dataset.theme=dark?'dark':'light';const picker=document.getElementById('appearanceChoice');if(picker)picker.value=appearancePreference;post({type:'appearance',mode:appearancePreference,resolved:dark?'dark':'light'})}
+function setAppearance(value){appearancePreference=['bright','dark','oled','system'].includes(value)?value:'system';preferenceSet('shelfAppearance',appearancePreference);applyAppearance()}
+systemAppearance.addEventListener('change',()=>{if(appearancePreference==='system')applyAppearance()});
 applyAppearance();
 function refresh(){post({type:'refresh'})}
 function showPage(id){
@@ -301,4 +302,9 @@ function renderReadwiseImport(){const root=document.getElementById('readwiseImpo
 window.shelfFocusSearch=()=>{showPage('books');const field=document.getElementById('librarySearch');field?.focus();field?.select()};
 document.querySelectorAll('.taskbar a').forEach((item,index)=>{item.tabIndex=0;item.setAttribute('role','button');item.title=item.textContent.trim()+(index<10?` · ⌘${index===9?0:index+1}`:'');item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();showPage(item.dataset.page)}})});
 
-const navigationMore=document.createElement('button');navigationMore.className='taskbar-more';navigationMore.type='button';navigationMore.setAttribute('aria-label','More views and keyboard shortcuts');navigationMore.textContent='•••';navigationMore.title='More views';navigationMore.addEventListener('click',()=>post({type:'showNavigationMenu'}));document.querySelector('.taskbar').appendChild(navigationMore);
+const navigationMore=document.createElement('button');navigationMore.className='taskbar-more';navigationMore.type='button';navigationMore.setAttribute('aria-label','More views and keyboard shortcuts');navigationMore.innerHTML='<span class="nav-symbol"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><small>More</small>';navigationMore.title='More views';navigationMore.addEventListener('click',()=>post({type:'showNavigationMenu'}));document.querySelector('.taskbar').appendChild(navigationMore);
+
+// Secondary tools stay available through native menus without crowding reading navigation.
+for(const id of ['review','preferences','studio'])document.querySelector(`.taskbar [data-page="${id}"]`)?.setAttribute('data-secondary-nav','');
+const highlightNav=document.querySelector('.taskbar [data-page="highlights"]');
+if(highlightNav){highlightNav.querySelector('.nav-symbol').innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 15 10-10 4 4-10 10H5v-4Zm8-8 4 4M4 22h16"/></svg>';document.querySelector('.taskbar [data-page="discover"]').before(highlightNav)}

@@ -1,3 +1,12 @@
+## 0.3.9
+- Apply dot. semantic colors, system typography, consistent controls and restrained motion across the dashboard, articles, settings and native reader. Keep explicit OLED black and add system-following appearance.
+- Focus navigation on Library, Articles, Highlights and Discover. Keep every secondary destination and keyboard command in the native More menu.
+- Share generated theme adapters with the iPhone app; include the dot. signature in About and Settings. Preserve app icons, identities, saved data and reader font choices.
+- Add dashboard initialization, hidden-menu routing and appearance regression checks.
+
+## iPhone preview 0.1.7
+- Use the shared dot. palette for library, articles, highlights, settings, startup and reader. Retain the explicit Black appearance and existing Expo Go SDK 58 compatibility.
+
 ## 0.3.8
 - Align iPhone dependencies with the current Expo SDK 58 patch recommendations so the preview validation check stays compatible.
 - Repair missing EPUB 3 SVG manifest declarations on a staged copy, accepting the result only after EPUBCheck succeeds and preserving an exact original backup. Other validation failures remain held for review.

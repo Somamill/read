@@ -31,6 +31,7 @@ jobs:
         run: swift test --scratch-path "$RUNNER_TEMP/ShelfSwiftTests"
       - name: Validate scripts and dashboard JavaScript
         run: |
+          python3 Scripts/build-dot-theme.py --check
           python3 -m py_compile Sources/ReadCore/Tools/*.py
           python3 -m unittest discover -s Tests/Python -v
           node --check Resources/Dashboard/app.js

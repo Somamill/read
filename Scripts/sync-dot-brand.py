@@ -26,3 +26,6 @@ if target.exists():
 shutil.copytree(kit, target)
 (target / 'source.json').write_text(json.dumps(manifest, indent=2) + '\n')
 print('Updated dot. kit to ' + sha)
+
+# Theme consumers are generated in the same update proposal as the brand snapshot.
+subprocess.run([sys.executable, str(repo / "Scripts/build-dot-theme.py")], check=True)
