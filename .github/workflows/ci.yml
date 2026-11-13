@@ -101,7 +101,7 @@ jobs:
           done
           grep -q 'dashboard page loaded' "$RUNNER_TEMP/shelf-startup.log" || { cat "$RUNNER_TEMP/shelf-startup.log"; sample "$APP_PID" 3 -file "$RUNNER_TEMP/shelf-sample.txt"; head -140 "$RUNNER_TEMP/shelf-sample.txt"; exit 1; }
           grep -q 'signed updater ready=1' "$RUNNER_TEMP/shelf-startup.log" || { cat "$RUNNER_TEMP/shelf-startup.log"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: generated-xcode-project
@@ -156,7 +156,7 @@ jobs:
         run: DOT_EDITION=store npx expo config --type public > /tmp/read-store-config.json
       - name: Export standalone iOS application bundle
         run: DOT_EDITION=store npx expo export --platform ios --output-dir dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: read-iphone-store-bundle
           path: Apps/iPhone/dist
