@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 python3 "$PROJECT_ROOT/Scripts/build-icon-assets.py" --check
 CONFIG_DIR="$HOME/Library/Application Support/Shelf"
 CONFIG_FILE="$CONFIG_DIR/config.json"
-BUILD_ROOT="/tmp/ShelfBuild-$UID"
+BUILD_ROOT="${SHELF_BUILD_ROOT:-/tmp/ShelfBuild-$UID}"
 APP_NAME="read"
 if [[ "${SHELF_DEVELOPMENT_BUILD:-0}" == 1 ]]; then
   APP_NAME="read Dev"

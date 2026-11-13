@@ -62,4 +62,3 @@ Sync runs while read. is open, on foreground activation and approximately once p
 - Password-protected, DRM-protected, login-only or oversized content can require its original readable file. Import limits: EPUB 32 MB compressed/64 MB expanded, media 250 MB, readable EPUB HTML 10 MB, Reader-provided text 2 MB.
 - The JSON export excludes credentials and original PDF/audio binaries. Keep source media separately. A backup restore UI is not implemented yet. Removing the app or clearing its storage can remove the local library.
 - No live account integration or physical iPhone test is claimed by the automated checks; use **Test connections & retry sync** on your own network.
-
