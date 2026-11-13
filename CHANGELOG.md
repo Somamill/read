@@ -1,3 +1,11 @@
+## 0.4.1
+
+- Retire Expo Go preview publishing and onboarding; keep the native Store build and framework.
+
+- Resolve the Store packaging merge while retaining local reading workflows, privacy controls and current Expo patches.
+- Introduce an upward-facing open-book identity drawn from one vector source and dot. colors. Export matching Mac Dock/app-switcher, iPhone, browser and repository assets, with drift checks.
+- Retain standard Mac icon padding and an opaque, unmasked mobile source for platform masking.
+
 ## 0.4.0
 
 - Saved articles now reconcile exact URL and redirect identities with the sync servers. Newer reading positions win independently of when an article was opened; deleted articles stay deleted. Local progress refreshes without refetching feeds.

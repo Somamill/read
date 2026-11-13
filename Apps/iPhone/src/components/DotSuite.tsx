@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Linking } from "react-native";
+import { Image, Linking } from "react-native";
 import { Card, Label, Button } from "./UI";
 
 export function DotSuite() {
@@ -7,6 +7,7 @@ export function DotSuite() {
   const [error, setError] = useState("");
   const open = (repo: string) => { setError(""); void Linking.openURL(`https://github.com/Somamill/${repo}`).catch(() => setError("Could not open the project page. Try again.")); };
   return <Card>
+    <Image source={require("../../assets/read-icon.png")} accessibilityLabel="read. open book" style={{width:48,height:48,borderRadius:12,marginBottom:12}} />
     <Label>read. · Part of dot.</Label>
     <Button secondary title={expanded ? "Hide companion apps" : "More from dot."} onPress={() => setExpanded(value => !value)} />
     {expanded && <>

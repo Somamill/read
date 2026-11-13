@@ -4,9 +4,9 @@ Original promotional artwork generated with the built-in image generation tool o
 
 ## Files
 
-- `read-hero.jpg`: dark editorial README hero, 1774 × 887; approximately 304 KB.
-- `read-features.jpg`: bright Books / Articles & RSS / Highlights illustration, 1774 × 887; approximately 204 KB.
-- `read-social-preview.jpg`: 1280 × 640 social preview, approximately 162 KB, uploaded in GitHub repository Settings → Social preview. Matches GitHub's recommended aspect ratio and stays below its 1 MB limit.
+- `read-hero.jpg`: warm paper README hero, 1600 × 800; generated from the current icon.
+- `read-features.jpg`: Books / Articles / Highlights identity panel, 1600 × 800; generated from the current icon.
+- `read-social-preview.jpg`: 1280 × 640 social preview, generated from the current icon, uploaded in GitHub repository Settings → Social preview. Matches GitHub's recommended aspect ratio and stays below its 1 MB limit.
 
 JPEG exports keep page downloads small. Original PNG generations remain in the creator's local generated-image archive; the final project assets are all present here. The app icon and application bundle are unchanged. No personal books, credentials, screenshots or third-party logos were used.
 
@@ -25,3 +25,9 @@ Use case: ads-marketing. Asset type: wide editorial feature artwork for the GitH
 The repository description and topics describe implemented features. README headings, alt text, direct download links and a live release badge support readable and searchable project information; no search ranking or traffic increase is guaranteed. Update the social preview manually in GitHub settings when replacing this artwork.
 
 Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview
+
+## Open-book identity
+
+The app-owned source is `branding/read/icon.json`; colors come from `branding/dot/tokens.json`. The raised page edges preserve a legible silhouette at small sizes. The warm paper tile references listen.’s restrained native tile; the compact mark follows Immersed’s clear silhouette. Shared suite snapshots remain unchanged.
+
+Regenerate every export on macOS with `python3 Scripts/build-icon-assets.py`. Run `python3 Scripts/build-icon-assets.py --check` on any platform to detect drift. macOS uses its normal transparent outer margin; the mobile image is opaque and full bleed so the operating system supplies the mask. Expo Go uses its own installed app icon; a standalone build is needed to replace the iPhone Home Screen icon.

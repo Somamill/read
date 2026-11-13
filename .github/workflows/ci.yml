@@ -32,6 +32,7 @@ jobs:
       - name: Validate scripts and dashboard JavaScript
         run: |
           python3 Scripts/build-dot-theme.py --check
+          python3 Scripts/build-icon-assets.py --check
           python3 -m py_compile Sources/ReadCore/Tools/*.py
           python3 -m unittest discover -s Tests/Python -v
           node --check Resources/Dashboard/app.js
@@ -151,9 +152,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - name: Export iOS preview bundle without Apple credentials
-        run: npx expo export --platform ios --output-dir dist
+      - name: Validate standalone Store configuration
+        run: DOT_EDITION=store npx expo config --type public > /tmp/read-store-config.json
+      - name: Export standalone iOS application bundle
+        run: DOT_EDITION=store npx expo export --platform ios --output-dir dist
       - uses: actions/upload-artifact@v4
         with:
-          name: read-iphone-sdk58-preview-bundle
+          name: read-iphone-store-bundle
           path: Apps/iPhone/dist

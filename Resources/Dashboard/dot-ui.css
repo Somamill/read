@@ -87,3 +87,6 @@ html .article-header>div>p{font-size:15px;margin:0}
 
 html .article-filters [aria-pressed="true"],html #toggleArticleSelection[aria-pressed="true"]{background:var(--dot-selection);color:var(--dot-link);border-color:var(--dot-accent)}
 html .article-select{min-height:28px}
+
+/* App-owned mark, generated from the same pages as Dock and mobile artwork. */
+.read-brand-icon { inline-size: 32px; block-size: 32px; vertical-align: middle; margin-inline-end: 12px; border-radius: 8px; }

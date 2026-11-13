@@ -1,32 +1,14 @@
-# read. for iPhone — Expo Go preview
+# read. for iPhone
 
-The iPhone app lives in [`Apps/iPhone`](../Apps/iPhone). Version **0.1.2** targets **Expo SDK 58**, including Expo Go client **58.0.5**. It is a React Native app with native tab navigation, a local SQLite library, secure credential storage and a WebView reading engine. It does not embed the Mac dashboard or require a Mac account to start reading.
+The standalone iPhone app lives in [`Apps/iPhone`](../Apps/iPhone). It uses React Native and Expo SDK 58 with a local SQLite library, secure credential storage and a WebView reading engine. The app is not a wrapper around the Mac dashboard.
 
-This is an initial mobile preview, not complete macOS feature parity. You do **not** need Xcode, an Apple Developer membership or an IPA to use it in Expo Go.
+Expo Go previews are no longer maintained. End users install a signed app through its available TestFlight or App Store distribution; see the [Store build guide](APP_STORE.md) for maintainer instructions and the [releases page](https://github.com/Somamill/read/releases) for published availability. This guide does not imply a public Store release has already been approved.
 
-## Open the hosted preview on an iPhone
+A standalone installation works without keeping a development Mac running. Optional Calibre and sync services still need to be reachable for their own synchronization. The phone stores downloaded books and saved article text locally.
 
-[**Open read. in Expo Go**](exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview)
+## Development
 
-Open this link on an iPhone with **Expo Go SDK 58**. The `iphone-preview` channel loads the latest compatible preview published to that channel. Expo hosts the app code and assets: your Mac does **not** need to remain running to open this preview. Downloaded books and local article text remain on the phone.
-
-The hosted project is [@somamill/read-mobile](https://expo.dev/accounts/somamill/projects/read-mobile). Developer publishing uses an Expo account; it does not require Apple signing. Existing Calibre/KOSync services still need to be reachable when you synchronize with them. Hosting the app in Expo does not move those servers or your library files to Expo.
-
-If you previously tried the temporary `exp.direct` link, use the hosted link above instead. Expo Go owns its home-screen icon and lifecycle; read.’s icon appears in the project listing.
-
-### Run a local development preview
-
-Developers can also run their own preview server:
-
-```sh
-git clone https://github.com/Somamill/read.git
-cd read/Apps/iPhone
-npm ci
-npx expo login
-npx expo start --go
-```
-
-Use the same Expo account in Expo CLI and Expo Go. Local development links require their computer to remain running and reachable. If LAN routing is blocked, `npx expo start --go --tunnel ngrok` can provide a temporary development tunnel. Sign-in on the iPhone does not sign in the computer.
+Run `npm ci` and `npx expo run:ios` from `Apps/iPhone` for a local native build. Xcode is a developer build dependency, not an end-user dependency. Use the Store build profiles in `eas.json` for signed distributions. Store editions disable downloaded JavaScript updates and are updated through Apple distribution.
 
 ## Connect your existing Mac setup automatically
 
@@ -39,7 +21,7 @@ cd Apps/iPhone
 npm run connect:mac
 ```
 
-The helper requires Node, Python 3 and `cloudflared` (install the latter with `brew install cloudflared`). It reads the current owner’s desktop configuration and validates Calibre/sync access. It stores a **private setup link** in Downloads. Open that link on the iPhone; if Expo Go drops the link fragment, paste the complete link under **Connections → Connect from your Mac** and choose **Connect everything**. Existing connections require confirmation before replacement; local books/highlights remain intact.
+The helper requires Node, Python 3 and `cloudflared` (install the latter with `brew install cloudflared`). It reads the current owner’s desktop configuration and validates Calibre/sync access. It stores a **private setup link** in Downloads. Open that link on the iPhone; paste the complete link under **Connections → Connect from your Mac** and choose **Connect everything**. Existing connections require confirmation before replacement; local books/highlights remain intact.
 
 Credentials and catalog metadata are encrypted with AES-256-GCM before passing through the temporary HTTPS relay. The decryption key stays in the setup link’s URL fragment, which is not sent to Expo’s update server. A high-entropy grant binds retrieval to the first device, retries are allowed for that device until acknowledgement, and the relay shuts down after confirmation or 30 minutes. Never put this private link in GitHub, a public issue or a screenshot. OAuth refresh credentials stay on their server; available stable API tokens can be transferred.
 
@@ -78,49 +60,6 @@ Sync runs while read. is open, on foreground activation and approximately once p
 - PDF text extraction/annotation and automatic PDF page tracking are not implemented in this preview. Audio progress stays local; it is not equivalent to an EPUB location.
 - Covers/images supplied by remote services can require a network connection. Imported EPUB covers and images are embedded locally.
 - Password-protected, DRM-protected, login-only or oversized content can require its original readable file. Import limits: EPUB 32 MB compressed/64 MB expanded, media 250 MB, readable EPUB HTML 10 MB, Reader-provided text 2 MB.
-- The JSON export excludes credentials and original PDF/audio binaries. Keep source media separately. A backup restore UI is not implemented yet. Removing Expo Go or clearing project storage can remove the local library.
+- The JSON export excludes credentials and original PDF/audio binaries. Keep source media separately. A backup restore UI is not implemented yet. Removing the app or clearing its storage can remove the local library.
 - No live account integration or physical iPhone test is claimed by the automated checks; use **Test connections & retry sync** on your own network.
 
-## Publish an update to the hosted preview
-
-The official Expo project is configured in `app.json` with public owner/project identifiers. These are not credentials; publishing still requires an authorized Expo account. No API token is committed to this repository.
-
-From `Apps/iPhone`, maintainers can run:
-
-```sh
-npx eas-cli@latest login
-npm ci
-npm run typecheck
-npm run lint
-npm test
-npm run publish:preview -- --message "read. iPhone preview update"
-```
-
-The script publishes iOS updates to the `iphone-preview` branch using the `preview` environment. The channel of the same name points to that branch, so the shared link opens the latest compatible publication. Publish only after validation. Expo Go's preview behavior is not the same as a standalone app's background updater.
-
-Keep `runtimeVersion.policy` set to **sdkVersion** for Expo Go previews and keep native dependencies compatible with Expo Go SDK 58. Do not switch to an app-version/fingerprint runtime while targeting this Expo Go client. Future SDK upgrades need a matching Expo Go client.
-
-Forks must configure their own Expo project/account before publishing. The official project's identifiers grant no write access. A standalone iOS/TestFlight/App Store build remains a separate release path requiring Apple signing. See [Expo preview documentation](https://docs.expo.dev/review/share-previews-with-your-team/) and [Expo Updates](https://docs.expo.dev/versions/v58.0.0/sdk/updates/).
-
-## Development checks
-
-```sh
-cd Apps/iPhone
-npm ci
-npm run assets
-npm run typecheck
-npm run lint
-npm test
-npx expo-doctor
-npx expo export --platform ios
-```
-
-The `iphone-preview` CI job runs dependency validation, lint/type checks, regression tests and an iOS JavaScript/Hermes export. It does not sign an IPA or require Apple credentials. Reader regression tests cover unsafe HTML, highlight restoration, chapter ordering/links, Japanese metadata, sampled document fingerprints, OPDS URLs and Digest authentication.
-
-Shared article extraction and sanitization assets retain their original licenses. To refresh them from the desktop project, run `npm run assets`; this copies the shared sources and notices before generating the mobile script module. Never add personal configuration or library exports to the repository.
-
-### Highlights review
-
-Open **Highlights → Start daily review**. Read one passage, reveal your note, and choose **Tomorrow**, **Next week** or **In a month**. Skipping leaves its schedule unchanged. Choose a daily goal of 3, 5 or 10 passages; the queue stays complete after reopening. Books and articles are included, including short Japanese highlights. Everything works offline.
-
-Private Mac setup also transfers saved highlights and their review schedules. Repeating setup preserves edited notes and the newer review history. This is a setup snapshot: Mac and iPhone review history do not continuously sync with one another. No highlights are bundled into Expo or GitHub.

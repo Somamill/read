@@ -1,3 +1,5 @@
+<p align="center"><img src="Documentation/Brand/read-icon.svg" width="96" height="96" alt="read. — an open book with lifted pages"></p>
+
 ![read. — a free, open-source macOS reader for EPUB books, offline articles, RSS feeds and highlights](Documentation/Brand/read-hero.jpg)
 
 # read. — Books, articles & highlights for macOS
@@ -15,11 +17,11 @@ Start with local articles and highlights: **no account, subscription, Xcode or s
 
 ## iPhone preview
 
-[**Open the hosted iPhone preview in Expo Go**](exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview). It targets **SDK 58** (including client 58.0.5) and runs without keeping your Mac on. Read EPUBs and articles, highlight, follow feeds and connect your own OPDS, KOSync and Readwise services. Apple Developer membership is unnecessary for this Expo Go preview. See the [setup guide and mobile feature limits](Documentation/IPHONE.md). macOS remains the stable desktop release.
+The standalone iPhone app uses the same local-first reading model. See the [iPhone guide](Documentation/IPHONE.md) and [Store build instructions](Documentation/APP_STORE.md). Expo Go previews are no longer maintained; current public availability is shown on the [releases page](https://github.com/Somamill/read/releases).
 
 ## What read. does
 
-![Books, Articles & RSS, and Highlights — an editorial illustration of read.’s three core reading workflows](Documentation/Brand/read-features.jpg)
+![Books, Articles & RSS, and Highlights — read.’s three core reading workflows with the current open-book identity](Documentation/Brand/read-features.jpg)
 
 *Promotional artwork, not an app screenshot.*
 

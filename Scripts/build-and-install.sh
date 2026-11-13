@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+python3 "$PROJECT_ROOT/Scripts/build-icon-assets.py" --check
 CONFIG_DIR="$HOME/Library/Application Support/Shelf"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 BUILD_ROOT="/tmp/ShelfBuild-$UID"
@@ -102,8 +103,7 @@ else
   CONTENTS="$BUILT_APP/Contents"
   RESOURCES="$CONTENTS/Resources"
   mkdir -p "$CONTENTS/MacOS" "$RESOURCES"
-  swift "$PROJECT_ROOT/Scripts/generate_icon.swift" "$PROJECT_ROOT/Resources/Icons/AppIcon.iconset"
-  iconutil --convert icns "$PROJECT_ROOT/Resources/Icons/AppIcon.iconset" --output "$PROJECT_ROOT/Resources/Icons/AppIcon.icns"
+  python3 "$PROJECT_ROOT/Scripts/build-icon-assets.py"
   swiftc -parse-as-library -swift-version 5 -target "$(uname -m)-apple-macosx14.0" \
     -emit-module -emit-library -module-name ReadCore \
     -emit-module-path "$RESOURCES/ReadCore.swiftmodule" \
@@ -121,7 +121,7 @@ else
     -o "$CONTENTS/MacOS/read" "$PROJECT_ROOT"/Sources/ReadMacApp/*.swift
   cp "$PROJECT_ROOT/Resources/Dashboard/index.html" "$PROJECT_ROOT/Resources/Dashboard/style.css" \
     "$PROJECT_ROOT/Resources/Dashboard/dot-tokens.css" "$PROJECT_ROOT/Resources/Dashboard/dot-brand.css" \
-    "$PROJECT_ROOT/Resources/Dashboard/article-extraction.js" "$PROJECT_ROOT/Resources/Dashboard/reader-experience.js" "$PROJECT_ROOT/Resources/Dashboard/reader-style.css" "$PROJECT_ROOT/Resources/Dashboard/reader-links.js" "$PROJECT_ROOT/Resources/Dashboard/discovery-reading.js" "$PROJECT_ROOT/Resources/Dashboard/articles.js" "$PROJECT_ROOT/Resources/Dashboard/articles.css" "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
+    "$PROJECT_ROOT/Resources/Dashboard/article-extraction.js" "$PROJECT_ROOT/Resources/Dashboard/reader-experience.js" "$PROJECT_ROOT/Resources/Dashboard/reader-style.css" "$PROJECT_ROOT/Resources/Dashboard/reader-links.js" "$PROJECT_ROOT/Resources/Dashboard/discovery-reading.js" "$PROJECT_ROOT/Resources/Dashboard/articles.js" "$PROJECT_ROOT/Resources/Dashboard/articles.css" "$PROJECT_ROOT/Resources/Dashboard/app.js" "$PROJECT_ROOT/Resources/Dashboard/read-icon.svg" "$PROJECT_ROOT/Resources/Dashboard/AppIcon.png" "$PROJECT_ROOT/Resources/Icons/AppIcon.icns" \
     "$PROJECT_ROOT/Sources/ReadCore/Tools/"*.py "$PROJECT_ROOT/Config/config.example.json" "$RESOURCES/"
   ditto "$PROJECT_ROOT/Resources/Dashboard/Vendor" "$RESOURCES/Vendor"
   ditto "$PROJECT_ROOT/Resources/PythonRuntime" "$RESOURCES/PythonRuntime"

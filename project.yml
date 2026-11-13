@@ -25,6 +25,8 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/index.html
         buildPhase: resources
+      - path: Resources/Dashboard/read-icon.svg
+        buildPhase: resources
       - path: Resources/Dashboard/AppIcon.png
         buildPhase: resources
       - path: Resources/Dashboard/dot-theme.json
@@ -128,8 +130,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.4.0
-        CURRENT_PROJECT_VERSION: 61
+        MARKETING_VERSION: 0.4.1
+        CURRENT_PROJECT_VERSION: 62
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES
