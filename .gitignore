@@ -41,6 +41,8 @@ node_modules/
 /Shelf*.xcodeproj/
 **/project.xcworkspace/xcshareddata/
 
+# Local design audit captures and reports.
+**/.hallmark/
 # Local design-audit captures
 .hallmark/shots/
 .hallmark/before/

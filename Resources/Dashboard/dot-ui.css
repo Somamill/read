@@ -1,0 +1,92 @@
+/* Hallmark · theme: dot. by request · shape: app screen · redesign: restyle · copy: verbatim · signature: content-first reading library · surface: absolute-white */
+/* Critique: semantic warm surfaces and one accent; native navigation; retain operational tools behind More. */
+/* Hallmark · waive 7b · white is the checked-in dot. surface token and primary button contrast color · preserve shared brand authority */
+/* Hallmark · answered F7 · shared panels and buttons are intentional application components; reading covers carry the content hierarchy */
+/* Brand exceptions: native system typography; dense operational screens; user-selected reading fonts. */
+html,body{overflow-x:clip}
+html:root{--ink:var(--dot-text);--muted:var(--dot-secondaryText);--line:var(--dot-border);--paper:var(--dot-background);--blue:var(--dot-accent);--glass-surface:var(--dot-surface);--glass-raised:var(--dot-surface);--glass-stroke:var(--dot-border);--glass-depth:none;--glass-tint:var(--dot-surface);--glass-shadow:none;--glass-edge:var(--dot-border);--dot-link:var(--dot-accent);--dot-selection:color-mix(in srgb,var(--dot-accent) 20%,transparent);--dot-danger:#ac3030;--dot-focus:var(--dot-link);--dot-motion:200ms;--dot-nav-shadow:0 6px 24px #00000014}
+html[data-theme="dark"]{--ink:var(--dot-text);--muted:var(--dot-secondaryText);--line:var(--dot-border);--paper:var(--dot-background);--blue:var(--dot-link);--glass-surface:var(--dot-surface);--glass-raised:var(--dot-surface);--glass-stroke:var(--dot-border);--glass-depth:none;--dot-link:var(--dot-accent);--dot-danger:#ffaaa2;--dot-selection:color-mix(in srgb,var(--dot-accent) 20%,transparent)}
+html body{background:var(--paper);color:var(--ink);font-family:var(--dot-font);font-size:16px;line-height:1.5;caret-color:var(--dot-link)}
+::selection{background:var(--dot-selection);color:var(--ink)}
+html main{width:100%;max-width:1280px;margin:0 auto;padding:56px 32px 120px}
+html header{border:0;gap:24px;align-items:flex-start;margin-bottom:32px}
+html header h1{font:650 28px/1.2 var(--dot-font);letter-spacing:-.025em;margin:0 0 8px;overflow-wrap:break-word;min-width:0}
+html header p{color:var(--muted);max-width:65ch;font-size:15px;line-height:1.5}
+html .host-status,html .eyebrow,html .setup-step{display:none}
+html .header-actions{margin-left:auto;gap:12px}
+html .updated{font-size:12px;color:var(--muted)}
+html .page :is(article,.setup-hero,.integration-hero,.secure,.host,.empty-books,.book-details,.library-tools,.book-filter,.connect-card,.connector-card,.all-book-card,.reading-book,.discover-book,.service-card,.automation-card,.annotation-card,.annotation-job,.annotation-settings fieldset,.setup-card,.setup-note,.setup-hint,.reader-setup-guide,.unmatched-card,.fulltext-hit,.library-book,.hardcover-background){background:var(--glass-surface);background-image:none;color:var(--ink);border-color:var(--line);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:var(--dot-radius-card)}
+html .page :is(article,.setup-card,.service-card,.automation-card,.connect-card,.connector-card):hover{transform:none;box-shadow:none}
+html .page :is(h2,h3,h4,b,strong){color:var(--ink);font-family:var(--dot-font);letter-spacing:normal}
+html .page :is(p,small,.hint,.setup-hint,.book-count,.setup-field,.book-more,.book-details summary,.library-book-meta span,.library-book-meta small){color:var(--muted)}
+html .page h2{font-size:22px;line-height:1.3;margin-top:32px;margin-bottom:16px}
+html .page h3{font-size:17px;line-height:1.4}
+html .page :is(.section-head,.all-book-meta,.library-book-meta){min-width:0}
+html .page :is(.all-book-meta b,.library-book-meta b){font-size:16px;line-height:1.4}
+html .page :is(.all-book-meta small,.library-book-meta small,.book-details,.book-more){font-size:13px;line-height:1.5}
+html :is(button,input,select,textarea){font-family:var(--dot-font);letter-spacing:normal;text-transform:none}
+html :is(.btn,.small-btn,.period-tab,.filter,.book-shelf-filters button,.discovery-sections button,.view-switch button,.field button){border-radius:var(--dot-radius-control);box-shadow:none;font-size:14px;min-height:36px;line-height:1.3;background:var(--glass-surface);color:var(--ink);border:1px solid var(--line);transition:background-color var(--dot-motion),color var(--dot-motion),opacity var(--dot-motion)}
+html :is(.btn.primary,.btn.white,.primary-action){background:var(--dot-accent);color:var(--dot-on-accent);border-color:var(--dot-accent);box-shadow:none}
+html :is(.btn.primary,.primary-action):hover{filter:brightness(.92);box-shadow:none;transform:none}
+html :is(.filter.on,.period-tab.active,.book-shelf-filters button.active,.discovery-sections button[aria-pressed="true"],.view-switch button.active){color:var(--dot-link);background:var(--dot-selection);border-color:var(--line)}
+html :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:var(--dot-radius-control);font-size:14px;min-height:36px;max-width:100%}
+html input::placeholder,html textarea::placeholder{color:var(--muted);opacity:1}
+html :is(input[type="checkbox"],input[type="radio"],progress){accent-color:var(--dot-accent)}
+html :is(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--dot-focus);outline-offset:3px;transition:none}
+html :is(button:disabled,[aria-disabled="true"]){opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+html .page :is(.setup-icon,.service-icon,.connect-icon,.badge,.shelf-badge,.book-source-badges small,.setup-card-head>span,.cover-fallback,.reading-cover,.library-cover){background:var(--paper);background-image:none;color:var(--muted);box-shadow:none;border-color:var(--line)}
+html .page .cover-fallback{color:var(--muted)}
+html .page :is(.provider-grid label,.check-list label){background:var(--paper);border-color:var(--line);border-radius:var(--dot-radius-control);box-shadow:none;transform:none}
+html .page :is(.provider-grid label,.check-list label):has(input:checked){background:var(--dot-selection);border-color:var(--dot-link)}
+html .page .annotation-card{border-inline-start-width:1px}
+html .page a{color:var(--dot-link);text-underline-offset:.2em}
+html .page pre,html .page code{color:var(--ink);background:var(--paper);font-size:13px}
+html .taskbar{background:color-mix(in srgb,var(--dot-surface) 92%,transparent);border:1px solid var(--line);border-radius:16px;box-shadow:none;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);max-width:calc(100% - 32px);padding:8px;gap:4px}
+html .taskbar :is(a,button){display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;min-width:70px;min-height:48px;padding:8px 12px;margin:0;border:0;border-radius:var(--dot-radius-control);background:transparent;color:var(--muted);box-shadow:none;cursor:pointer;text-decoration:none;transform:none}
+html .taskbar :is(a,button):hover{background:var(--dot-selection);color:var(--ink);transform:none}
+html .taskbar a.active{background:var(--dot-selection);color:var(--dot-link);box-shadow:none}
+html .taskbar .nav-symbol{width:22px;height:22px;min-width:22px;display:block}
+html .nav-symbol svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+html .taskbar small{font-size:12px;line-height:1.2;font-weight:500}
+html .taskbar [data-secondary-nav]{display:none}
+html footer{color:var(--muted);border-top:1px solid var(--line);font-size:13px;padding:24px 0;margin-top:32px}
+.dot-about{margin-top:32px;padding-top:24px;border-top:1px solid var(--line);max-width:65ch}.dot-about h3{margin:0 0 8px}.dot-about p{margin:8px 0}.dot-companions{display:flex;flex-wrap:wrap;gap:16px}
+@media(max-width:760px){html main{padding:48px 16px 112px}html header{gap:16px;margin-bottom:24px}html header h1{font-size:24px}html .header-actions{width:100%;justify-content:space-between}html .taskbar{left:50%;right:auto;transform:translateX(-50%);width:max-content}html .taskbar :is(a,button){min-width:52px;padding:8px}html .taskbar small{font-size:11px}}
+@media(prefers-reduced-transparency:reduce){html .taskbar{background:var(--dot-surface);backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media(prefers-reduced-motion:reduce){html *,html *::before,html *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(prefers-contrast:more){html:root{--dot-border:currentColor}html .taskbar,html .page article{border-width:2px}html :focus-visible{outline-width:3px}}
+
+html .page:focus{outline:none!important}
+html .page .book-finished{background:var(--glass-surface)!important}
+html .book-source-badges small{font-size:12px!important}
+html .btn:active,html .small-btn:active,html .taskbar a:active{opacity:1;border-color:var(--dot-accent)}
+html header h1{text-wrap:balance}
+html .taskbar [data-page="books"]{order:0}html .taskbar [data-page="articles"]{order:1}html .taskbar [data-page="highlights"]{order:2}html .taskbar [data-page="discover"]{order:3}html .taskbar-more{order:4}
+html .epub-drop-zone{background:var(--glass-surface);border-color:var(--line);color:var(--ink);border-radius:var(--dot-radius-card)}
+html .epub-drop-zone :is(p,small){font-size:13px;color:var(--muted)}
+html .unmatched-card{display:flex;flex-wrap:wrap;gap:12px;padding:16px}html .unmatched-card>div{flex:1 1 220px;min-width:0}html .unmatched-card select{max-width:100%;flex:1 1 160px}html .unmatched-card p,html .unmatched-card small{font-size:13px;line-height:1.5}
+html .library-tools{background:transparent;border:0;box-shadow:none}
+html .book-search{flex:1 1 260px;width:100%;min-width:0}
+html .page :is(.hint,.setup-hint,.updated,.setup-note,.setup-footer,.reading-footer){font-size:13px}
+html .shell,html main{background:var(--paper)}
+html .page .epub-drop-zone{background:var(--glass-surface);color:var(--ink)}
+html .book-shelf-filters button{font-size:14px}
+.smart-views{margin:16px 0;border:1px solid var(--line);border-radius:var(--dot-radius-card);padding:16px;background:var(--glass-surface)}
+.smart-views summary{font-weight:600;cursor:pointer}.smart-views form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.smart-views label{display:grid;gap:8px;flex:1 1 220px;font-size:13px;color:var(--muted)}.smart-views input{width:100%;padding:8px 12px}.smart-views p{font-size:13px}.saved-reading-view{display:inline-flex;gap:4px;margin:8px 8px 0 0}.saved-reading-view small{margin-left:8px}.article-header-actions,.article-bulk{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.article-bulk{padding:16px 0}.article-bulk[hidden]{display:none}.article-select{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);padding:12px 0}.article-select input{width:18px;height:18px}.article-bulk span{margin-right:auto}
+.command-dialog{width:min(640px,calc(100% - 32px));max-height:75vh;margin:12vh auto 0;padding:24px;border:1px solid var(--line);border-radius:var(--dot-radius-card);background:var(--glass-surface);color:var(--ink);font-family:var(--dot-font)}.command-dialog::backdrop{background:color-mix(in srgb,var(--ink) 24%,transparent)}.command-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}.command-heading h2{font-size:20px;margin:0}.command-dialog>input{width:100%;padding:12px;min-height:44px}.command-dialog>p{color:var(--muted);font-size:13px}.command-dialog #commandResults{display:grid;gap:4px;margin-top:16px;max-height:45vh;overflow-y:auto}.command-result{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:16px;padding:12px;border:0;border-radius:var(--dot-radius-control);background:transparent;color:var(--ink);font-size:15px;cursor:pointer}.command-result small{color:var(--muted);font-size:13px}.command-result:hover,.command-result:focus-visible{background:var(--dot-selection)}
+@media(max-width:760px){.command-result{align-items:flex-start;flex-direction:column;gap:4px}.command-dialog{padding:16px}.article-header-actions{justify-content:flex-start}}
+
+#setupStatus:empty,#readingQueryError:empty,#articleNotice:empty{display:none}
+
+html .primary-btn{font:600 15px var(--dot-font);border:1px solid var(--dot-accent);border-radius:var(--dot-radius-control);min-height:44px;padding:12px 16px;background:var(--dot-accent);color:var(--dot-on-accent);cursor:pointer}
+html .primary-btn:hover{filter:brightness(.94)}
+html .article-card:has(.article-select){position:relative;padding-top:60px}
+html .article-select{position:absolute;left:24px;top:16px;padding:0}
+html .article-card-main{flex:1;max-width:none}
+html .article-header>div>p{font-size:15px;margin:0}
+
+html .article-filters [aria-pressed="true"],html #toggleArticleSelection[aria-pressed="true"]{background:var(--dot-selection);color:var(--dot-link);border-color:var(--dot-accent)}
+html .article-select{min-height:28px}
+
+/* App-owned mark, generated from the same pages as Dock and mobile artwork. */
+.read-brand-icon { inline-size: 32px; block-size: 32px; vertical-align: middle; margin-inline-end: 12px; border-radius: 8px; }

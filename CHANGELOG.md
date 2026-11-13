@@ -1,15 +1,39 @@
-## [0.3.8] - 2026-11-12
+## 0.4.1
 
-### Changed
-- Apply dot. shared typography, spacing, controls and warm reading accents in Bright and OLED appearances.
-- Add accessible suite discovery and companion project links; bundle the new styles in both Mac build paths.
-- Export the shared tokens into runtime assets whenever the brand snapshot updates.
+- Retire Expo Go preview publishing and onboarding; keep the native Store build and framework.
 
-## iPhone preview [0.1.7] - 2026-11-12
+- Resolve the Store packaging merge while retaining local reading workflows, privacy controls and current Expo patches.
+- Introduce an upward-facing open-book identity drawn from one vector source and dot. colors. Export matching Mac Dock/app-switcher, iPhone, browser and repository assets, with drift checks.
+- Retain standard Mac icon padding and an opaque, unmasked mobile source for platform masking.
 
-### Changed
-- Use shared paper/amber palettes, control shapes and heading sizes while preserving OLED and reader font preferences.
-- Add dot. companion discovery to Connections.
+## 0.4.0
+
+- Saved articles now reconcile exact URL and redirect identities with the sync servers. Newer reading positions win independently of when an article was opened; deleted articles stay deleted. Local progress refreshes without refetching feeds.
+- Add account-free saved reading views with a bounded query parser shared with iPhone: phrases, Boolean grouping, tags, authors, types, source domains, read-time estimates, progress and relative dates.
+- Add a Cmd/Ctrl+K command menu for navigation, capture, saved views and local library search.
+- Add article multi-select and atomic bulk inbox/later/finish/star updates, with full selection validation.
+- Replace hundreds of per-field Docker invocations in the progress bridge with one bounded read-only Redis snapshot. Reuse the installer’s Python runtime and isolate service bytecode caches instead of forcing the Xcode Python stub.
+- Integrate the latest dot. 1.1.1 roles, including accessible dark accents, without duplicating mobile theme sources.
+- Record the public Readwise research, existing feature coverage and remaining integration limits.
+
+## iPhone preview 0.1.8
+- Add local reading views, shared metadata query semantics, unified search/action navigation, article tags/stars and bulk finish/inbox actions.
+- Preserve article tags and metadata during re-extraction; store character counts for estimated reading-time filters.
+
+## 0.3.9
+- Integrate dot. kit 1.1.0, including accessible dark accent and on-accent roles, preserving the current shared suite integration.
+- Apply dot. semantic colors, system typography, consistent controls and restrained motion across the dashboard, articles, settings and native reader. Keep explicit OLED black and add system-following appearance.
+- Focus navigation on Library, Articles, Highlights and Discover. Keep every secondary destination and keyboard command in the native More menu.
+- Share generated theme adapters with the iPhone app; include the dot. signature in About and Settings. Preserve app icons, identities, saved data and reader font choices.
+- Add dashboard initialization, hidden-menu routing and appearance regression checks.
+
+## iPhone preview 0.1.7
+- Use the shared dot. palette for library, articles, highlights, settings, startup and reader. Retain the explicit Black appearance and existing Expo Go SDK 58 compatibility.
+
+## 0.3.8
+- Align iPhone dependencies with the current Expo SDK 58 patch recommendations so the preview validation check stays compatible.
+- Repair missing EPUB 3 SVG manifest declarations on a staged copy, accepting the result only after EPUBCheck succeeds and preserving an exact original backup. Other validation failures remain held for review.
+- Include an idempotent installer for the existing import validation gate, keeping the normal malware scan, Calibre import and sync fingerprint workflow.
 
 ## 0.3.7
 - Recover BOOX Wi-Fi debugging automatically when an explicitly configured, already-authorized tablet reconnects over USB after reboot. Detect its current Wi-Fi address and avoid restarting an active TCP debugging session.

@@ -32,3 +32,6 @@ for destination, name in exports.items():
     output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(kit / name, output)
 print('Updated dot. kit to ' + sha)
+
+# Theme consumers are generated in the same update proposal as the brand snapshot.
+subprocess.run([sys.executable, str(repo / "Scripts/build-dot-theme.py")], check=True)

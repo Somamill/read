@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import { PrivacyAndSupport } from "../../components/PrivacyAndSupport";
 import { DotSuite } from "../../components/DotSuite";
 import { importMacSetup } from "../../lib/pairing";
@@ -382,16 +381,7 @@ export default function Connections() {
         </Label>
       </Card>
 <PrivacyAndSupport />
-{Constants.expoConfig?.extra?.edition !== "store" && (      <Card>
-        <Label>Expo Go compatibility</Label>
-        <Label small>
-          Local reading, Files import, feeds, speech, audio playback and these
-          connections run in Expo Go SDK 58. Apple Books/BookPlayer private
-          databases, Mac background jobs, native OCR and extensions require
-          separate platform integrations. Expo Go is a preview host, not a
-          standalone App Store release.
-        </Label>
-      </Card>)}
+
     </Page>
   );
 }

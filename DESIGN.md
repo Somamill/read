@@ -9,3 +9,5 @@ Identity: warm paper and amber; retain explicit OLED black and user-selected rea
 Use dark accent roles from the kit, with on-accent foregrounds. Primary actions and active selection use the app accent; success, warnings and learning states retain their own semantic colors. Respect reduced motion and native text scaling. No promotional hero or decorative animation belongs in task screens.
 
 Verification: use Impeccable and Hallmark on the supported web surfaces, real browser screenshots at desktop and narrow widths, and the app’s platform checks. HTML checks do not validate a native screen. Hyperframes applies to a future video deliverable; this UI change introduces no video assets.
+
+`Scripts/build-dot-theme.py` generates the read.-specific CSS adapter and native palette JSON. Canonical CSS and mobile tokens remain managed by brand sync. Retain four reading destinations plus the native More menu.

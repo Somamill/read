@@ -437,8 +437,12 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         case "saveSetup": if let config=body["config"] as? [String:Any] { saveSetup(config) }
         case "chooseSetupFolder": chooseSetupFolder(body["role"] as? String ?? "library")
         case "appearance":
-            let mode=(body["mode"] as? String) == "bright" ? "bright" : "oled"
+            let requested=body["mode"] as? String ?? "system"
+            let mode=["bright","dark","oled","system"].contains(requested) ? requested : "system"
             let resolved=(body["resolved"] as? String) == "light" ? "light" : "dark"
+            window.appearance=NSAppearance(named:resolved == "dark" ? .darkAqua : .aqua)
+            window.backgroundColor=DotTheme.color("background",dark:resolved == "dark",oled:mode == "oled")
+            webView.underPageBackgroundColor=window.backgroundColor
             UserDefaults.standard.set(mode,forKey:"shelfAppearance")
             UserDefaults.standard.set(resolved,forKey:"shelfResolvedAppearance")
             if (UserDefaults.standard.string(forKey:"readerTheme") ?? "auto") == "auto" {
@@ -617,7 +621,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let menu=NSMenu()
         let app=NSMenuItem(); menu.addItem(app)
         let appMenu=NSMenu(); app.submenu=appMenu
-        appMenu.addItem(withTitle:"About read.",action:#selector(NSApplication.orderFrontStandardAboutPanel(_:)),keyEquivalent:"")
+        appMenu.addItem(withTitle:"About read.",action:#selector(showReadAbout),keyEquivalent:"")
         appMenu.addItem(.separator())
         let shelfUpdate=NSMenuItem(title:"Check for read. Updates…",action:#selector(checkShelfUpdates),keyEquivalent:"")
         if let controller=shelfUpdater { shelfUpdate.target=controller; shelfUpdate.action=#selector(SPUStandardUpdaterController.checkForUpdates(_:)) }
@@ -627,6 +631,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         appMenu.addItem(withTitle:"Quit read.",action:#selector(NSApplication.terminate(_:)),keyEquivalent:"q")
         let view=NSMenuItem(); view.title="Dashboard"; menu.addItem(view)
         let viewMenu=NSMenu(); view.submenu=viewMenu; navigationMenu=viewMenu
+        let commands=NSMenuItem(title:"Find command…",action:#selector(menuCommands),keyEquivalent:"k"); commands.target=self; viewMenu.addItem(commands)
         let updateItem=NSMenuItem(title:"Check for updates",action:#selector(menuUpdate),keyEquivalent:"u"); updateItem.target=self; updateItem.keyEquivalentModifierMask=[.command,.shift]; viewMenu.addItem(updateItem)
         let edit=NSMenuItem(); edit.title="Edit"; menu.addItem(edit)
         let editMenu=NSMenu(title:"Edit"); edit.submenu=editMenu
@@ -644,6 +649,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
     }
 
     private var navigationMenu:NSMenu?
+    @objc private func showReadAbout() {
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: NSAttributedString(string: "Books, articles, and highlights.\n\nPart of dot.")])
+    }
+
     private func showMoreViews() {
         let popup=NSMenu(title:"More")
         for item in navigationMenu?.items ?? [] { if let copy=item.copy() as? NSMenuItem { popup.addItem(copy) } }
@@ -654,6 +663,10 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         let pages=["books","discover","statistics","services","integrations","activity","setup","updates","highlights","review","preferences","studio"]
         guard pages.indices.contains(sender.tag) else { return }
         webView.evaluateJavaScript("document.querySelector('.taskbar [data-page=\(pages[sender.tag])]')?.click()",completionHandler:nil)
+    }
+    @objc private func menuCommands() {
+        if activeReader != nil { closeReader() }
+        webView.evaluateJavaScript("window.readOpenCommandMenu?.()",completionHandler:nil)
     }
     @objc private func menuSearch() {
         if activeReader != nil { closeReader() }
@@ -1355,7 +1368,7 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
               const style=document.createElement('style');
               style.textContent='html,body{height:100%!important;overflow:hidden!important;background:var(--reader-paper)!important}body{margin:0!important;padding:0!important;max-width:none!important;font-family:var(--reader-font)!important;font-size:var(--reader-size)!important;line-height:var(--reader-leading)!important;color:var(--reader-ink)!important;transition:background-color .18s,color .18s}#reader-viewport{position:fixed;inset:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;scroll-snap-type:x proximity;scrollbar-width:none;background:var(--reader-paper)}#reader-viewport::-webkit-scrollbar{display:none}#reader-flow{box-sizing:border-box!important;width:100vw!important;max-width:none!important;height:100%!important;padding:48px 280px 104px;column-width:790px;column-gap:560px;column-fill:auto!important;orphans:2;widows:2;transition:font-size .18s;overflow:visible}#reader-flow>div,#reader-flow>section{break-inside:auto!important;max-width:none!important}#reader-flow p{margin:0 0 1.15em!important}#reader-flow h1,#reader-flow h2,#reader-flow h3,#reader-flow h4{line-height:1.4!important;margin:1.4em 0 .7em!important;break-after:avoid;scroll-margin-top:18px}#reader-flow img{max-width:min(56vw,560px)!important;max-height:48vh!important;width:auto!important;height:auto!important;object-fit:contain;break-inside:avoid;display:block;margin-inline:auto}#reader-flow svg{width:min(56vw,560px)!important;height:auto!important;max-height:48vh!important;break-inside:avoid;display:block;margin-inline:auto}#reader-flow blockquote{margin-inline-start:1.4em!important}#reader-flow pre{white-space:pre-wrap!important}#reader-flow table{max-width:100%;font-size:.9em}#reader-flow :where(p,div,section,article,span,h1,h2,h3,h4,h5,h6,li,blockquote){color:inherit!important;background-color:transparent!important;font-family:inherit!important}#reader-flow a{color:#669dff!important}#reader-flow mark.reader-highlight{background:#ffe08a!important;color:inherit!important;border-radius:2px}';document.head.appendChild(style);const polish=document.createElement('style');polish.textContent=\(Self.javascriptString(readerStyle));document.head.appendChild(polish);
               let lastSent=-1,lastCandidate=0,lastChapter=-1,lastPositionSent=0,lastProgressAttempt=0,progressSyncPending=false,allowProgressSync=false,userHasNavigated=false,pageCount=1,currentPage=0,readerViewport=null,readerFlow=null,wheelActive=false,readerLayout="auto";
-              window.readerApplyPreferences=function(p){const priorProgress=percentage();readerLayout=["auto","single","spread","scroll"].includes(p.layout)?p.layout:"auto";document.documentElement.dataset.readerLayout=readerLayout;const japanese=(String(window.readerBook.language||'').toLowerCase().startsWith('ja')||/[\\u3040-\\u30ff\\u3400-\\u9fff]/.test(window.readerBook.title||''));const fonts={serif:japanese?'"Noto Serif CJK JP","Hiragino Mincho ProN",serif':'"Noto Serif","Charter",Georgia,serif',sans:japanese?'"Noto Sans CJK JP","Hiragino Sans",sans-serif':'"Noto Sans",-apple-system,BlinkMacSystemFont,sans-serif',system:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif'};const themes={light:['#ffffff','#222222'],paper:['#f6f3eb','#302c24'],night:['#17191b','#e7e4dd'],oled:['#000000','#f1f1f3']};const palette=p.theme==='auto'?(p.appearance==='dark'?themes.oled:themes.paper):(themes[p.theme]||themes.paper);const leading={compact:'1.55',normal:'1.72',relaxed:'1.9'};const root=document.documentElement;root.style.colorScheme=(palette===themes.oled||palette===themes.night)?'dark':'light';root.style.setProperty('--reader-font',fonts[p.font]||fonts.sans);root.style.setProperty('--reader-size',(Number(p.size)||19)+'px');root.style.setProperty('--reader-leading',leading[p.spacing]||leading.normal);root.style.setProperty('--reader-paper',palette[0]);root.style.setProperty('--reader-ink',palette[1]);if(readerFlow)readerFlow.style.fontFamily=fonts[p.font]||fonts.sans;if(readerFlow)readerFlow.style.fontSize=(Number(p.size)||19)+'px';setTimeout(()=>{if(readerViewport){layoutPages();setPage(Math.round(priorProgress*(pageCount-1)),false)}},80)};
+              window.readerApplyPreferences=function(p){const priorProgress=percentage();readerLayout=["auto","single","spread","scroll"].includes(p.layout)?p.layout:"auto";document.documentElement.dataset.readerLayout=readerLayout;const japanese=(String(window.readerBook.language||'').toLowerCase().startsWith('ja')||/[\\u3040-\\u30ff\\u3400-\\u9fff]/.test(window.readerBook.title||''));const fonts={serif:japanese?'"Noto Serif CJK JP","Hiragino Mincho ProN",serif':'"Noto Serif","Charter",Georgia,serif',sans:japanese?'"Noto Sans CJK JP","Hiragino Sans",sans-serif':'"Noto Sans",-apple-system,BlinkMacSystemFont,sans-serif',system:'-apple-system,BlinkMacSystemFont,system-ui,sans-serif'};const themes={light:['#ffffff','#222222'],paper:['#f6f3eb','#302c24'],night:['#17191b','#e7e4dd'],oled:['#000000','#f1f1f3']};const palette=p.theme==='auto'&&p.oled?themes.oled:p.theme==='auto'?(p.appearance==='dark'?['\(DotTheme.hex("background",dark:true))','\(DotTheme.hex("text",dark:true))']:['\(DotTheme.hex("background",dark:false))','\(DotTheme.hex("text",dark:false))']):(themes[p.theme]||themes.paper);const leading={compact:'1.55',normal:'1.72',relaxed:'1.9'};const root=document.documentElement;root.style.colorScheme=(palette===themes.oled||palette===themes.night)?'dark':'light';root.style.setProperty('--reader-font',fonts[p.font]||fonts.sans);root.style.setProperty('--reader-size',(Number(p.size)||19)+'px');root.style.setProperty('--reader-leading',leading[p.spacing]||leading.normal);root.style.setProperty('--reader-paper',palette[0]);root.style.setProperty('--reader-ink',palette[1]);if(readerFlow)readerFlow.style.fontFamily=fonts[p.font]||fonts.sans;if(readerFlow)readerFlow.style.fontSize=(Number(p.size)||19)+'px';setTimeout(()=>{if(readerViewport){layoutPages();setPage(Math.round(priorProgress*(pageCount-1)),false)}},80)};
               let titleKey=(window.readerBook.title||'').trim().toLocaleLowerCase();
               const chapterEntries=[],seenChapterTargets=new Set();
               for(const entry of window.readerBook.toc||[]){const target=document.getElementById(entry.id);if(target&&!seenChapterTargets.has(target)){seenChapterTargets.add(target);chapterEntries.push({element:target,title:entry.title,depth:entry.depth||0})}}
@@ -1562,14 +1575,14 @@ final class DashboardApp: NSObject, NSApplicationDelegate, WKScriptMessageHandle
         articleQueue.async{[weak self] in guard let self else{return};let data=self.articleResult(["action":"neighbor","id":id,"direction":direction]);DispatchQueue.main.async{if let next=data["id"] as? Int{self.articleRequest(["action":"open","id":next])}else{self.notify("No more articles in this source.")}}}
     }
     private func readerPreferencePayload()->[String:Any] {
-        ["layout":UserDefaults.standard.string(forKey:"readerLayout") ?? "auto","size":readerFontSize,"font":readerFontChoice,"theme":UserDefaults.standard.string(forKey:"readerTheme") ?? "auto","spacing":UserDefaults.standard.string(forKey:"readerSpacing") ?? "normal","appearance":UserDefaults.standard.string(forKey:"shelfResolvedAppearance") ?? "dark"]
+        ["oled":UserDefaults.standard.string(forKey:"shelfAppearance") == "oled","layout":UserDefaults.standard.string(forKey:"readerLayout") ?? "auto","size":readerFontSize,"font":readerFontChoice,"theme":UserDefaults.standard.string(forKey:"readerTheme") ?? "auto","spacing":UserDefaults.standard.string(forKey:"readerSpacing") ?? "normal","appearance":UserDefaults.standard.string(forKey:"shelfResolvedAppearance") ?? "dark"]
     }
 
     private func applyReaderPreferences() {
         let theme=UserDefaults.standard.string(forKey:"readerTheme") ?? "auto"
         let dark=theme == "oled" || theme == "night" || (theme == "auto" && UserDefaults.standard.string(forKey:"shelfResolvedAppearance") == "dark")
         readerContentView?.appearance=NSAppearance(named:dark ? .darkAqua : .aqua)
-        readerWebView?.underPageBackgroundColor=dark ? .black : .white
+        readerWebView?.underPageBackgroundColor=DotTheme.color("background",dark:dark,oled:theme == "oled" || (theme == "auto" && UserDefaults.standard.string(forKey:"shelfAppearance") == "oled"))
         guard let data=try? JSONSerialization.data(withJSONObject:readerPreferencePayload()),let json=String(data:data,encoding:.utf8) else { return }
         readerWebView?.evaluateJavaScript("window.readerApplyPreferences && window.readerApplyPreferences(\(json));",completionHandler:nil)
         readerSizeLabel?.stringValue="\(Int(readerFontSize)) pt"

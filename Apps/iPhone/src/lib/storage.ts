@@ -76,6 +76,7 @@ export async function exportSnapshot() {
   const data = await snapshot();
   return {
     ...data,
+    views: await list("reading-view"),
     books: await Promise.all(
       data.books.map(async (b) => ({ ...b, html: await content(b.id) })),
     ),

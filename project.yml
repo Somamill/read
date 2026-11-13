@@ -25,13 +25,21 @@ targets:
         buildPhase: resources
       - path: Resources/Dashboard/index.html
         buildPhase: resources
+      - path: Resources/Dashboard/read-icon.svg
+        buildPhase: resources
       - path: Resources/Dashboard/AppIcon.png
         buildPhase: resources
-      - path: Resources/Dashboard/style.css
+      - path: Resources/Dashboard/dot-theme.json
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-brand.css
+        buildPhase: resources
+      - path: Resources/Dashboard/dot-adapter.css
         buildPhase: resources
       - path: Resources/Dashboard/dot-tokens.css
         buildPhase: resources
-      - path: Resources/Dashboard/dot-brand.css
+      - path: Resources/Dashboard/dot-ui.css
+        buildPhase: resources
+      - path: Resources/Dashboard/style.css
         buildPhase: resources
       - path: Resources/Dashboard/Vendor
         type: folder
@@ -41,6 +49,10 @@ targets:
       - path: Resources/Dashboard/reader-experience.js
         buildPhase: resources
       - path: Resources/Dashboard/reader-style.css
+        buildPhase: resources
+      - path: Resources/Dashboard/command-menu.js
+        buildPhase: resources
+      - path: Resources/Dashboard/reading-views.js
         buildPhase: resources
       - path: Resources/Dashboard/reader-links.js
         buildPhase: resources
@@ -64,6 +76,8 @@ targets:
       - path: Sources/ReadCore/Tools/calibre_fts.py
         buildPhase: resources
       - path: Sources/ReadCore/Tools/shelf_book_actions.py
+        buildPhase: resources
+      - path: Sources/ReadCore/Tools/epub_manifest_repair.py
         buildPhase: resources
       - path: Sources/ReadCore/Tools/epub_native.py
         buildPhase: resources
@@ -116,8 +130,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.shelf.dashboard
         PRODUCT_NAME: read
-        MARKETING_VERSION: 0.3.8
-        CURRENT_PROJECT_VERSION: 59
+        MARKETING_VERSION: 0.4.1
+        CURRENT_PROJECT_VERSION: 62
         SWIFT_VERSION: "5.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: YES

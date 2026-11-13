@@ -1,5 +1,5 @@
-import { dotTokens } from "../lib/dot-tokens";
 import React from "react";
+import { router } from "expo-router";
 import {
   ScrollView,
   View,
@@ -11,23 +11,29 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRead } from "../lib/context";
 import { Ionicons } from "@expo/vector-icons";
+import { dotTokens as dot } from "../lib/dot-tokens";
 export function usePalette() {
-  const { dark } = useRead();
-  const colors = dotTokens.colors[dark ? "dark" : "light"];
+  const { dark, settings } = useRead();
+  const colors = dark ? dot.colors.dark : dot.colors.light;
   return {
-    bg: dark ? "#000" : colors.background,
-    card: colors.surface, ink: colors.text, muted: colors.secondaryText, line: colors.border,
-    blue: dotTokens.colors[dark ? "accentsDark" : "accents"].read,
-    onBlue: dotTokens.colors.onAccent[dark ? "dark" : "light"],
+    bg: settings.theme === "black" ? "#000000" : colors.background,
+    card: colors.surface,
+    ink: colors.text,
+    muted: colors.secondaryText,
+    line: colors.border,
+    blue: dot.colors[dark ? "accentsDark" : "accents"].read,
+    onBlue: dot.colors.onAccent[dark ? "dark" : "light"],
   };
 }
 export function Page({
   title,
   subtitle,
+  searchable = true,
   children,
 }: {
   title: string;
   subtitle?: string;
+  searchable?: boolean;
   children: React.ReactNode;
 }) {
   const p = usePalette(),
@@ -43,18 +49,22 @@ export function Page({
       }}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:16}}>
       <Text
         accessibilityRole="header"
         style={{
           fontSize: 28,
           fontWeight: "700",
-          letterSpacing: -0.6,
+          letterSpacing: -0.5,
           color: p.ink,
+          flex:1,
           marginTop: 10,
         }}
       >
         {title}
       </Text>
+      {searchable&&<Pressable accessibilityRole="button" accessibilityLabel="Search library and commands" onPress={()=>router.push("/search")} style={{padding:12,minWidth:44,minHeight:44,alignItems:"center",justifyContent:"center"}}><Ionicons name="search-outline" size={24} color={p.ink}/></Pressable>}
+      </View>
       {subtitle && (
         <Text
           style={{
@@ -84,7 +94,7 @@ export function Card({
       style={[
         {
           padding: 18,
-          borderRadius: dotTokens.radius.card,
+          borderRadius: dot.radius.card,
           backgroundColor: p.card,
           borderWidth: 1,
           borderColor: p.line,
@@ -141,9 +151,9 @@ export function Button({
       style={({ pressed }) => ({
         paddingVertical: 14,
         paddingHorizontal: 18,
-        borderRadius: dotTokens.radius.control,
+        borderRadius: dot.radius.control,
         backgroundColor: secondary ? p.bg : p.blue,
-        opacity: disabled ? 0.4 : dotTokens.interaction.pressedOpacity,
+        opacity: disabled ? 0.4 : dot.interaction.pressedOpacity,
         borderWidth: 1,
         borderColor: pressed ? (secondary ? p.ink : p.onBlue) : "transparent",
         flexDirection: "row",
@@ -201,7 +211,7 @@ export function Field({
           backgroundColor: p.bg,
           color: p.ink,
           padding: 14,
-          borderRadius: dotTokens.radius.control,
+          borderRadius: 13,
           fontSize: 16,
           borderWidth: 1,
           borderColor: p.line,

@@ -24,6 +24,52 @@ class ArticleTests(unittest.TestCase):
     def save(self,**changes):
         return self.lib.save({'url':'https://example.org/story','title':'A worthwhile story','content':'<p>Thoughtful writing with enough words to make a readable offline article.</p>',**changes})
 
+    def test_legacy_progress_timestamp_migrates_without_resetting_position(self):
+        identifier=self.save()
+        self.lib.db.execute('UPDATE articles SET progress=.5,opened=123 WHERE id=?',(identifier,))
+        self.lib.db.execute('ALTER TABLE articles DROP COLUMN progress_updated');self.lib.db.commit()
+        migrated=articles.Library(self.lib.root);self.addCleanup(migrated.db.close)
+        self.assertEqual(migrated.article(identifier)['progress_updated'],123)
+        migrated.db.execute('UPDATE articles SET opened=456');migrated.db.commit()
+        again=articles.Library(self.lib.root);self.addCleanup(again.db.close)
+        self.assertEqual(again.article(identifier)['progress_updated'],123)
+
+    def test_open_does_not_claim_a_new_reading_position(self):
+        identifier=self.save()
+        with patch.object(articles.time,'time',return_value=100):
+            self.lib.dispatch({'action':'progress','id':identifier,'percentage':.4})
+        with patch.object(articles.time,'time',return_value=200):
+            self.lib.open(identifier)
+        row=self.lib.article(identifier)
+        self.assertEqual((row['opened'],row['progress_updated']),(200,100))
+        self.lib.dispatch({'action':'bulk','ids':[identifier],'status':'archive'})
+        self.assertGreater(self.lib.article(identifier)['progress_updated'],100)
+
+    def test_views_persist_without_changing_articles(self):
+        identifier=self.save()
+        before=self.lib.article(identifier)
+        result=self.lib.dispatch({'action':'save_view','name':'短い記事','query':'type:article read:<15'})
+        view=result['views'][0]
+        repeated=self.lib.dispatch({'action':'save_view','name':'短い記事','query':'type:article read:<15'})
+        self.assertEqual(len(repeated['views']),1)
+        self.assertEqual(repeated['views'][0]['id'],view['id'])
+        self.lib.dispatch({'action':'save_view','id':view['id'],'name':'Quick reads','query':'is:unread'})
+        self.assertEqual(self.lib.list()['views'][0]['name'],'Quick reads')
+        self.assertEqual(self.lib.article(identifier),before)
+        self.lib.dispatch({'action':'delete_view','id':view['id']})
+        self.assertEqual(self.lib.list()['views'],[])
+
+    def test_bulk_actions_validate_the_entire_selection_before_writing(self):
+        first=self.save();second=self.save(url='https://example.org/other')
+        with self.assertRaises(ValueError):self.lib.dispatch({'action':'bulk','ids':[first,99999],'status':'archive'})
+        self.assertEqual(self.lib.article(first)['progress'],0)
+        result=self.lib.dispatch({'action':'bulk','ids':[first,second,first],'status':'archive','favorite':True})
+        self.assertTrue(all(x['progress']==1 and x['favorite']==1 for x in result['items']))
+        self.lib.dispatch({'action':'bulk','ids':[first,second],'status':'inbox'})
+        self.assertEqual(self.lib.article(first)['progress'],0)
+        for ids in ([],[True],['1'],[first]*201):
+            with self.assertRaises(ValueError):self.lib.dispatch({'action':'bulk','ids':ids,'status':'later'})
+
     def test_save_again_keeps_identity_position_tags_and_finished_status(self):
         identifier=self.save(url='https://example.org/story?utm_source=newsletter#text')
         self.lib.dispatch({'action':'update','id':identifier,'tags':'哲学, reading','favorite':True})

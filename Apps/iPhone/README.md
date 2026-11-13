@@ -1,17 +1,7 @@
 # read. for iPhone
 
-A local-first React Native reader for **Expo Go SDK 58**. Import EPUBs, read saved articles, follow feeds, highlight passages and connect your own reading services.
+The standalone React Native app imports EPUBs, reads saved articles, follows feeds, stores highlights and connects to user-selected reading services. It uses Expo SDK 58 as its build framework; Expo Go distribution is no longer maintained.
 
-[**Open the hosted iPhone preview in Expo Go**](exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview)
+Install dependencies with `npm ci`. For a local native build use `npx expo run:ios`; local compilation requires Xcode. End users install a signed app and do not need Xcode, Node or Expo Go. Production and internal Store builds are defined in `eas.json`; see [Store packaging](../../Documentation/APP_STORE.md).
 
-The hosted preview works with the Mac switched off. Your Calibre/KOSync servers must still be reachable for their own synchronization.
-
-For local development:
-
-```sh
-npm ci
-npx expo login
-npx expo start --go
-```
-
-Use the same Expo account on the computer and in Expo Go. See the [mobile setup guide, feature matrix and publishing instructions](../../Documentation/IPHONE.md). This is an initial mobile preview; macOS-only integrations are not available in Expo Go.
+See the [iPhone guide](../../Documentation/IPHONE.md) for connections and feature limits. The Mac-only background integrations remain separate.

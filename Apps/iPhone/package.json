@@ -1,6 +1,6 @@
 {
   "name": "read-iphone",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -56,7 +56,6 @@
     "assets": "node scripts/sync-web-assets.mjs",
     "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "lint": "expo lint",
-    "publish:preview": "npx eas-cli@latest update --branch iphone-preview --platform ios --environment preview",
     "connect:mac": "node scripts/mac-pair-server.mjs"
   },
   "private": true

@@ -19,11 +19,11 @@ export default function TabLayout() {
       }}
     >
       {[
-        ["index", "Books", "book-outline"],
+        ["index", "Library", "book-outline"],
         ["articles", "Articles", "newspaper-outline"],
         ["highlights", "Highlights", "pencil-outline"],
         ["statistics", "Stats", "stats-chart-outline"],
-        ["connections", "Connect", "options-outline"],
+        ["connections", "Settings", "options-outline"],
       ].map(([name, title, icon]) => (
         <Tabs.Screen
           key={name}
