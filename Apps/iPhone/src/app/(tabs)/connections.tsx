@@ -1,3 +1,5 @@
+import Constants from "expo-constants";
+import { PrivacyAndSupport } from "../../components/PrivacyAndSupport";
 import { DotSuite } from "../../components/DotSuite";
 import { importMacSetup } from "../../lib/pairing";
 import { ConnectionHealth } from "../../components/ConnectionHealth";
@@ -379,7 +381,8 @@ export default function Connections() {
           included; retain those source files.
         </Label>
       </Card>
-      <Card>
+<PrivacyAndSupport />
+{Constants.expoConfig?.extra?.edition !== "store" && (      <Card>
         <Label>Expo Go compatibility</Label>
         <Label small>
           Local reading, Files import, feeds, speech, audio playback and these
@@ -388,8 +391,7 @@ export default function Connections() {
           separate platform integrations. Expo Go is a preview host, not a
           standalone App Store release.
         </Label>
-      </Card>
-    
+      </Card>)}
     </Page>
   );
 }
