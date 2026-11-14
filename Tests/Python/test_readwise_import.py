@@ -123,6 +123,15 @@ class ReadwiseImportTests(unittest.TestCase):
         self.pull(response([book(),{'user_book_id':1,'is_deleted':True}]))
         self.assertTrue(self.lib.items()[0]['archived'])
 
+    def test_highlight_moved_to_another_book_survives_old_book_deletion(self):
+        self.pull(response([book()]))
+        self.time.return_value+=901
+        moved=book(2,highlights=book()['highlights'])
+        self.pull(response([moved,{'user_book_id':1,'is_deleted':True}]))
+        item=self.lib.items()[0]
+        self.assertEqual(item['sourceBookId'],'2')
+        self.assertFalse(item['archived'])
+
     def test_remote_edit_updates_unmodified_notes_but_preserves_local_changes(self):
         self.pull(response([book()]))
         self.time.return_value+=901

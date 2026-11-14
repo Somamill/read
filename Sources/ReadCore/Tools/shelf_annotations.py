@@ -325,7 +325,7 @@ class Library:
                 if book.get('is_deleted'):
                     for key in readwise_by_book.get(book_id,()):
                         item=self.get(key)
-                        if item: self.archive_readwise(item)
+                        if item and item.get('sourceBookId')==book_id: self.archive_readwise(item)
                     continue
                 if not isinstance(book.get('highlights'),list): raise ValueError('Invalid highlights')
                 for highlight in book['highlights']:
