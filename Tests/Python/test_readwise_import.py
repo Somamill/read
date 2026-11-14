@@ -79,6 +79,59 @@ class ReadwiseImportTests(unittest.TestCase):
         self.assertEqual(len(self.lib.items()),1)
         self.assertEqual(self.lib.readwise_status()['imported'],0)
 
+    def test_identical_refresh_preserves_modified_time(self):
+        self.pull(response([book()]))
+        original=self.lib.items()[0]
+        self.time.return_value+=901
+        self.pull(response([book()]))
+        self.assertEqual(self.lib.items()[0],original)
+
+    def test_refresh_preserves_local_reader_anchor_and_color(self):
+        self.pull(response([book()]))
+        item=self.lib.items()[0]
+        anchor={'document':'a'*32,'chapter':'Local chapter','chapterIndex':3,'start':100,'end':116,'page':12,'percentage':0.4}
+        item.update(bookId=7,location=anchor,color='pink')
+        with self.lib.db:
+            self.lib.db.execute('UPDATE highlights SET value=? WHERE id=?',(json.dumps(item),item['id']))
+        self.time.return_value+=901
+        self.pull(response([book()]))
+        refreshed=self.lib.items()[0]
+        self.assertEqual(refreshed['location'],anchor)
+        self.assertEqual(refreshed['color'],'pink')
+        self.assertEqual(refreshed['bookId'],7)
+
+    def test_long_source_text_does_not_generate_false_conflicts(self):
+        page=book(highlights=[{'id':100,'text':'long passage '*2000,'note':''}])
+        self.pull(response([page]))
+        original=self.lib.items()[0]
+        self.time.return_value+=901
+        self.pull(response([page]))
+        self.assertEqual(self.lib.conflicts(),[])
+        self.assertEqual(self.lib.items()[0],original)
+
+    def test_book_deletion_preserves_same_page_updates(self):
+        self.pull(response([book()]))
+        self.time.return_value+=901
+        updated=book(highlights=[{'id':100,'text':'Updated text','note':'New source note'}])
+        self.pull(response([updated,{'user_book_id':1,'is_deleted':True}]))
+        item=self.lib.items()[0]
+        self.assertTrue(item['archived'])
+        self.assertEqual(item['note'],'New source note')
+        self.assertEqual(item['text'],'Updated text')
+
+    def test_same_page_new_book_then_deletion_is_archived(self):
+        self.pull(response([book(),{'user_book_id':1,'is_deleted':True}]))
+        self.assertTrue(self.lib.items()[0]['archived'])
+
+    def test_highlight_moved_to_another_book_survives_old_book_deletion(self):
+        self.pull(response([book()]))
+        self.time.return_value+=901
+        moved=book(2,highlights=book()['highlights'])
+        self.pull(response([moved,{'user_book_id':1,'is_deleted':True}]))
+        item=self.lib.items()[0]
+        self.assertEqual(item['sourceBookId'],'2')
+        self.assertFalse(item['archived'])
+
     def test_remote_edit_updates_unmodified_notes_but_preserves_local_changes(self):
         self.pull(response([book()]))
         self.time.return_value+=901
