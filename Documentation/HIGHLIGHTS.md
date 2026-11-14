@@ -164,6 +164,26 @@ file without converting it first.
 
 ## Development checks
 
+Highlight responses share a single library snapshot across filters, review cards,
+and review status. Review selection stops at the remaining daily goal rather than
+building an unused list of every candidate. Readwise book deletions use a per-page
+index; individual lookups use SQLite's highlight primary key. Unchanged refreshes
+preserve modification timestamps and avoid rewriting highlight rows. Linked local
+reader positions and personal colors survive source refreshes, including imports
+of long passages. Outgoing batches choose up to five eligible jobs, so paused or
+disconnected destinations do not block unrelated ready jobs.
+
+For a reproducible offline benchmark using 5,000 synthetic highlights across 100
+books (no credentials, network requests, or changes to your real library):
+
+```sh
+python3 Tests/Python/benchmark_annotations.py
+```
+
+It reports the median of five refreshes and the time to apply 100 book tombstones.
+Timings are informational and depend on the machine. Correctness checks validate
+record counts, unique review cards, and retained archived records.
+
 ```sh
 python3 -m unittest discover -s Tests/Python -v
 node --check Resources/Dashboard/app.js

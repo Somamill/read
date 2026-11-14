@@ -100,6 +100,10 @@ class Library:
     def items(self):
         return [json.loads(r[0]) for r in self.db.execute('SELECT value FROM highlights')]
 
+    def get(self,key):
+        row=self.db.execute('SELECT value FROM highlights WHERE id=?',(key,)).fetchone()
+        return json.loads(row[0]) if row else None
+
     def put(self, raw, enqueue=False, overwrite=False, commit=True):
         if not isinstance(raw, dict) or not compact(raw.get('text')): raise ValueError('A passage is required')
         if raw.get('id'):
@@ -141,6 +145,8 @@ class Library:
             try: value['id']=str(uuid.UUID(str(raw.get('id'))))
             except (ValueError,TypeError,AttributeError): value['id']=str(uuid.uuid4())
             if self.db.execute('SELECT 1 FROM highlights WHERE id=?',(value['id'],)).fetchone(): value['id']=str(uuid.uuid4())
+        elif all(value[k]==old.get(k) for k in value if k!='updatedAt'):
+            return old,False
         self.db.execute('INSERT OR REPLACE INTO highlights VALUES (?,?,?)',(value['id'],identity,json.dumps(value,ensure_ascii=False)))
         if enqueue and not value['archived']: self.enqueue(value['id'])
         if commit: self.commit()
@@ -170,10 +176,10 @@ class Library:
         self.db.commit()
         return item
 
-    def filter(self, rules=None):
-        rules=rules or {}; settings=self.settings()
+    def filter(self, rules=None, *, items=None, settings=None):
+        rules=rules or {}; settings=self.settings() if settings is None else settings
         q=compact(rules.get('search')).casefold()
-        items=[x for x in self.items() if (rules.get('archived',settings['showArchived']) or not x['archived'])
+        items=[x for x in (self.items() if items is None else items) if (rules.get('archived',settings['showArchived']) or not x['archived'])
                and (not rules.get('favorite') or x['favorite'])
                and (not rules.get('notes') or x['note'].strip())
                and (not rules.get('bookId') or str(x['bookId'])==str(rules['bookId']))
@@ -193,34 +199,43 @@ class Library:
         self.db.execute('INSERT OR REPLACE INTO collections VALUES (?,?)',(value['id'],json.dumps(value))); self.commit()
         return value
 
-    def review(self, day=None):
-        s=self.settings(); day=day or datetime.now()
+    def review(self, day=None, *, items=None, settings=None, collections=None, status=None):
+        s=self.settings() if settings is None else settings; day=day or datetime.now()
         if now()<s['snoozeUntil'] or day.weekday() not in s['reviewDays']: return []
-        rules=next((c['rules'] for c in self.collections() if c['id']==s['reviewCollection']),{})
-        candidates=[x for x in self.filter(rules) if not x['archived'] and x['frequency']>0 and x['nextReview']<=now()
-                    and str(x['bookId']) not in [str(v) for v in s['excludedBooks']]
-                    and not set(x['tags'])&set(s['excludedTags'])]
+        items=self.items() if items is None else items
+        status=self.review_status(items=items,settings=s) if status is None else status
+        limit=status['remaining']
+        if not limit: return []
+        collections=self.collections() if collections is None else collections
+        rules=next((c['rules'] for c in collections if c['id']==s['reviewCollection']),{})
+        excluded_books={str(v) for v in s['excludedBooks']}; excluded_tags=set(s['excludedTags'])
+        candidates=[x for x in self.filter(rules,items=items,settings=s) if not x['archived'] and x['frequency']>0 and x['nextReview']<=now()
+                    and str(x['bookId']) not in excluded_books and not excluded_tags.intersection(x['tags'])]
         # Stable daily order, favor unseen items without excluding short/Japanese passages.
         candidates.sort(key=lambda x:(x['reviewCount']/x['frequency'],hashlib.sha256((day.date().isoformat()+x['id']).encode()).hexdigest()))
         selected=[]
         # Give local book and article passages a place alongside imported highlights.
         for category in ('book','article'):
             match=next((x for x in candidates if (x['bookId']>0 if category=='book' else x['source']=='read. articles')),None)
-            if match and len(selected)<s['reviewSize']:selected.append(match)
-        selected.extend(x for x in candidates if x not in selected)
-        return selected[:self.review_status()['remaining']]
+            if match and match not in selected and len(selected)<limit:selected.append(match)
+        selected_ids={x['id'] for x in selected}
+        for item in candidates:
+            if len(selected)>=limit: break
+            if item['id'] not in selected_ids:
+                selected.append(item); selected_ids.add(item['id'])
+        return selected
 
-    def review_status(self):
+    def review_status(self, *, items=None, settings=None):
         stamp=now(); today=datetime.fromtimestamp(stamp)
         start=int(today.replace(hour=0,minute=0,second=0,microsecond=0).timestamp())
-        s=self.settings()
-        reviewed=sum(start<=x.get('lastReviewedAt',0)<=stamp for x in self.items())
+        s=self.settings() if settings is None else settings
+        reviewed=sum(start<=x.get('lastReviewedAt',0)<=stamp for x in (self.items() if items is None else items))
         return {'goal':s['reviewSize'],'reviewed':reviewed,'remaining':max(0,s['reviewSize']-reviewed),
                 'day':today.date().isoformat(),'snoozed':stamp<s['snoozeUntil'],
                 'scheduled':today.weekday() in s['reviewDays']}
 
     def reviewed(self,key,days):
-        item=next((x for x in self.items() if x['id']==key),None)
+        item=self.get(key)
         if not item: raise ValueError('Highlight not found')
         if not isinstance(days,(int,float)) or not math.isfinite(days): raise ValueError('Invalid review interval')
         stamp=now(); today=datetime.fromtimestamp(stamp)
@@ -246,7 +261,8 @@ class Library:
     def resolve(self,key,accept):
         row=self.db.execute('SELECT highlight,value FROM conflicts WHERE id=?',(key,)).fetchone()
         if not row: raise ValueError('Conflict no longer exists')
-        incoming=json.loads(row['value']); current=next(x for x in self.items() if x['id']==row['highlight'])
+        incoming=json.loads(row['value']); current=self.get(row['highlight'])
+        if not current: raise ValueError('Highlight no longer exists')
         current['sourceText']=incoming['text']; current['sourceNote']=text(incoming.get('note'))
         if accept:
             current['text']=incoming['text']; current['note']=text(incoming.get('note')); current['location']={k:incoming[k] for k in ('chapter','start','end','prefix','suffix','percentage','document') if k in incoming}
@@ -298,16 +314,18 @@ class Library:
                 raise ValueError('Invalid export cursor')
             # No changes to highlights or cursor survive a malformed/failed page.
             self.db.execute('SAVEPOINT readwise_page')
-            legacy_by_id={}
+            legacy_by_id={}; readwise_by_book={}
             for item in self.items():
                 if item['source']=='Readwise Reader': legacy_by_id.setdefault(item['sourceId'],[]).append(item)
+                elif item['source']=='Readwise': readwise_by_book.setdefault(item.get('sourceBookId'),set()).add(item['id'])
             for book in page['results']:
                 if not isinstance(book,dict) or not book.get('user_book_id'):
                     raise ValueError('Invalid book')
                 book_id=str(book['user_book_id'])
                 if book.get('is_deleted'):
-                    for item in self.items():
-                        if item['source']=='Readwise' and item.get('sourceBookId')==book_id: self.archive_readwise(item)
+                    for key in readwise_by_book.get(book_id,()):
+                        item=self.get(key)
+                        if item: self.archive_readwise(item)
                     continue
                 if not isinstance(book.get('highlights'),list): raise ValueError('Invalid highlights')
                 for highlight in book['highlights']:
@@ -323,6 +341,7 @@ class Library:
                             existing={**legacy[0],'source':'Readwise','sourceId':source_id,'sourceBookId':book_id}
                             self.db.execute('UPDATE highlights SET identity=?,value=? WHERE id=?',
                                             (identity,json.dumps(existing,ensure_ascii=False),existing['id']))
+                            readwise_by_book.setdefault(book_id,set()).add(existing['id'])
                     if highlight.get('is_deleted'):
                         if existing: self.archive_readwise(existing)
                         continue
@@ -341,14 +360,17 @@ class Library:
                     date=highlight.get('highlighted_at') or highlight.get('created_at')
                     if date:
                         raw['createdAt']=int(datetime.fromisoformat(date.replace('Z','+00:00')).timestamp())
-                    clean=existing and existing['note']==existing.get('sourceNote','') and existing['text']==existing.get('sourceText',existing['text'])
+                    clean=existing and existing['note']==existing.get('sourceNote','') and existing['text']==text(existing.get('sourceText',existing['text']))
                     if existing and clean:
-                        raw={**existing,**raw,'favorite':existing['favorite'],'tags':list(dict.fromkeys(existing['tags']+raw['tags'])),
+                        raw={**existing.get('location',{}),**existing,**raw,'favorite':existing['favorite'],'color':existing['color'],
+                             'tags':list(dict.fromkeys(existing['tags']+raw['tags'])),
                              'archived':existing['archived'],'bookId':existing['bookId'],
                              'sourceText':raw['text'],'sourceNote':raw['note']}
                         # Do not take the generic import's identical-ID early return.
                         raw.pop('id',None)
-                    _,created=self.put(raw,overwrite=bool(clean),commit=False)
+                        if existing['bookId']>0: raw.update(existing.get('location',{}))
+                    item,created=self.put(raw,overwrite=bool(clean),commit=False)
+                    readwise_by_book.setdefault(book_id,set()).add(item['id'])
                     state['imported']+=int(created); state['processed']+=1
             state.update(cursor=cursor,inProgress=bool(cursor),failures=0,
                          nextAt=now()+4 if cursor else now()+900,
@@ -385,14 +407,20 @@ class Library:
     def sync(self, credentials, automatic=False):
         s=self.settings()
         if automatic and not s['autoSync']: return
-        for job in [j for j in self.queue() if j['status'] in ('pending','failed') and j['next_at']<=now()][:5]:
-            if job['destination'] in s['paused'] or not s['destinations'][job['destination']]: continue
-            if job['status'] not in ('pending','failed') or job['next_at']>now(): continue
-            item=next((x for x in self.items() if x['id']==job['highlight']),None)
-            if not item or item['archived']: continue
+        destinations=[dest for dest,enabled in s['destinations'].items() if enabled and dest not in s['paused']
+                      and credentials.get('syncKey' if dest=='crosspoint' else 'token')]
+        if not destinations: return
+        placeholders=','.join('?' for _ in destinations)
+        ready=self.db.execute("SELECT * FROM queue WHERE status IN ('pending','failed') AND next_at<=? AND destination IN ("+
+                              placeholders+") ORDER BY updated,id",(now(),*destinations))
+        jobs=[]
+        for row in ready:
+            item=self.get(row['highlight'])
+            if item and not item['archived']: jobs.append((dict(row),item))
+            if len(jobs)==5: break
+        ready.close()
+        for job,item in jobs:
             dest=job['destination']
-            if not credentials.get('token') and dest!='crosspoint': continue
-            if dest=='crosspoint' and not credentials.get('syncKey'): continue
             with self.db:
                 claimed=self.db.execute("UPDATE queue SET status='sending',updated=? WHERE id=? AND status IN ('pending','failed')",(now(),job['id'])).rowcount
             if not claimed: continue
@@ -596,7 +624,13 @@ def dispatch(lib, p):
             lib.db.rollback(); raise
         finally: lib.batch=False
     elif action!='list': raise ValueError('Unknown annotation action')
-    return {'ok':True,**result,'readwiseSync':lib.readwise_status(),'items':lib.filter({'archived':True} if p.get('all') else p.get('rules')),'settings':lib.settings(),'collections':lib.collections(),'review':lib.review(),'reviewStatus':lib.review_status(),'queue':lib.queue(),'conflicts':lib.conflicts()}
+    items=lib.items(); settings=lib.settings(); collections=lib.collections()
+    status=lib.review_status(items=items,settings=settings)
+    return {'ok':True,**result,'readwiseSync':lib.readwise_status(),
+            'items':lib.filter({'archived':True} if p.get('all') else p.get('rules'),items=items,settings=settings),
+            'settings':settings,'collections':collections,
+            'review':lib.review(items=items,settings=settings,collections=collections,status=status),
+            'reviewStatus':status,'queue':lib.queue(),'conflicts':lib.conflicts()}
 
 
 def main():

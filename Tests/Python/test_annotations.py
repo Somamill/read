@@ -46,6 +46,52 @@ class AnnotationTests(unittest.TestCase):
         self.add(start=1,end=10)
         self.assertEqual(len(self.lib.items()),2)
 
+    def test_filtered_response_keeps_review_independent_of_search(self):
+        first=self.add(text='First saved passage')
+        second=self.add(text='Second saved passage',source='read. articles',bookId=0)
+        result=annotations.dispatch(self.lib,{'action':'list','rules':{'search':'First'}})
+        self.assertEqual([x['id'] for x in result['items']],[first['id']])
+        self.assertEqual({x['id'] for x in result['review']},{first['id'],second['id']})
+        self.assertEqual(result['reviewStatus']['remaining'],result['settings']['reviewSize'])
+
+    def test_review_contains_unique_passages_when_categories_overlap(self):
+        shared=self.add(source='read. articles',bookId=7)
+        other=self.add(text='Another passage')
+        self.lib.save_settings({'reviewSize':2})
+        cards=self.lib.review()
+        self.assertEqual({x['id'] for x in cards},{shared['id'],other['id']})
+        self.assertEqual(len(cards),2)
+
+    def test_paused_jobs_do_not_starve_ready_uploads(self):
+        self.lib.save_settings({'destinations':{'readwise':True,'crosspoint':True},'paused':['crosspoint']})
+        ready=self.add(text='Ready to send')
+        self.lib.enqueue(ready['id'],'readwise')
+        for i in range(6):
+            blocked=self.add(text='Paused '+str(i))
+            self.lib.enqueue(blocked['id'],'crosspoint')
+        with self.lib.db:
+            self.lib.db.execute("UPDATE queue SET updated=100 WHERE destination='readwise'")
+            self.lib.db.execute("UPDATE queue SET updated=200 WHERE destination='crosspoint'")
+        with patch.object(annotations.urllib.request,'urlopen') as upload:
+            upload.return_value.__enter__.return_value.status=201
+            self.lib.sync({'token':'fixture-token','syncKey':'fixture-key'})
+            self.assertEqual(upload.call_count,1)
+        jobs=self.lib.queue()
+        self.assertEqual(next(j['status'] for j in jobs if j['destination']=='readwise'),'sent')
+        self.assertTrue(all(j['status']=='pending' for j in jobs if j['destination']=='crosspoint'))
+
+    def test_upload_batch_stays_bounded_and_drains_without_duplicates(self):
+        self.lib.save_settings({'destinations':{'readwise':True}})
+        for i in range(8): self.lib.put({'text':'Passage '+str(i)},enqueue=True)
+        with patch.object(annotations.urllib.request,'urlopen') as upload:
+            upload.return_value.__enter__.return_value.status=201
+            self.lib.sync({'token':'fixture-token'})
+            self.assertEqual(upload.call_count,5)
+            self.lib.sync({'token':'fixture-token'})
+            self.lib.sync({'token':'fixture-token'})
+            self.assertEqual(upload.call_count,8)
+        self.assertTrue(all(j['status']=='sent' for j in self.lib.queue()))
+
     def test_source_identity_survives_reimport_and_archive(self):
         item=self.add(source='Kindle',sourceId='provider-1')
         self.lib.update(item['id'],{'archived':True,'note':'my note'})
