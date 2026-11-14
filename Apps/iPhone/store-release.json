@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "scheme": "read",
+  "workspace": "ios/read.xcworkspace",
+  "bundleIdentifier": "io.github.somamill.read.mobile",
+  "teamId": "YJH8WWUVF3",
+  "iosProfile": "dot read IOS_APP_STORE",
+  "appStoreId": "6834109889"
+}

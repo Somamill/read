@@ -107,7 +107,7 @@ server.listen(17458, "127.0.0.1", () => {
       }),
     ).toString("base64url");
     const link =
-      "exp://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89?runtime-version=exposdk%3A58.0.0&channel-name=iphone-preview#read-setup=" +
+      "read-mobile://connections#read-setup=" +
       payload;
     const destination = path.join(
       homedir(),
@@ -115,7 +115,7 @@ server.listen(17458, "127.0.0.1", () => {
     );
     writeFileSync(destination, link + "\n", { mode: 0o600 });
     console.log(
-      "Private setup link saved to Downloads/read-private-setup-link.txt. It is never uploaded to Expo or GitHub.",
+      "Private setup link saved to Downloads/read-private-setup-link.txt. Open it in the installed read. app; never share it publicly.",
     );
   };
   cloud.stdout.on("data", output);

@@ -1,0 +1,83 @@
+name: Native Store delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Apple platform
+        type: choice
+        options: [all, ios, macos]
+        default: all
+  push:
+    branches: [main]
+    paths: ['Apps/iPhone/**', '.github/workflows/testflight.yml', 'branding/dot/**', 'assets/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-store-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    if: github.event_name == 'workflow_dispatch' || vars.STORE_RELEASE_ENABLED == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 120
+    environment: store-release
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, macos]
+    defaults:
+      run:
+        working-directory: Apps/iPhone
+    env:
+      CI: '1'
+      EXPO_OFFLINE: '1'
+      EXPO_NO_TELEMETRY: '1'
+      DOT_EDITION: store
+      DOT_TARGET: ${{ matrix.platform }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+      APPLE_DISTRIBUTION_P12_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
+      APPLE_DISTRIBUTION_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ matrix.platform == 'ios' && secrets.IOS_PROVISIONING_PROFILE_BASE64 || '' }}
+      MAC_PROVISIONING_PROFILE_BASE64: ${{ matrix.platform == 'macos' && secrets.MAC_PROVISIONING_PROFILE_BASE64 || '' }}
+      MAC_INSTALLER_P12_BASE64: ${{ matrix.platform == 'macos' && secrets.MAC_INSTALLER_P12_BASE64 || '' }}
+      MAC_INSTALLER_PASSWORD: ${{ matrix.platform == 'macos' && secrets.MAC_INSTALLER_PASSWORD || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: Apps/iPhone/package-lock.json
+      - name: Install and check the Store app
+        if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint
+          npm test --if-present
+      - name: Prepare approved Apple signing credentials
+        if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: python3 scripts/ci-signing.py
+      - name: Allocate a build number from Apple history
+        if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: node scripts/apple-release.mjs next-build-number
+      - name: Build with Xcode and upload through Apple tools
+        if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: bash scripts/build-store.sh "$DOT_TARGET" --upload
+      - name: Verify Apple processing
+        if: github.event_name == 'push' || inputs.platform == 'all' || inputs.platform == matrix.platform
+        run: |
+          node scripts/apple-release.mjs wait-for-build "$DOT_TARGET"
+          echo 'Apple processed this native build. TestFlight tester access and App Review are separate release stages.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove temporary runner signing credentials
+        if: always()
+        run: |
+          if [ -n "${DOT_SIGNING_KEYCHAIN:-}" ]; then security delete-keychain "$DOT_SIGNING_KEYCHAIN"; fi
+          rm -rf "$RUNNER_TEMP/dot-store-signing"
+          if [ -n "${ASC_KEY_ID:-}" ]; then rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"; fi

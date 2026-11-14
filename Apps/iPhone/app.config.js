@@ -1,4 +1,4 @@
-// Keep the community preview separate from reviewed, bundled Store releases.
+// Native releases bundle their code and use Xcode signing; no hosted updates.
 module.exports = ({ config }) => {
   if (process.env.DOT_EDITION !== 'store') return config;
   return {
@@ -8,11 +8,12 @@ module.exports = ({ config }) => {
       if (name === 'expo-audio') return [name, { microphonePermission: false, recordAudioAndroid: false, enableBackgroundRecording: false, enableBackgroundPlayback: true }];
       if (name === 'expo-secure-store') return [name, { faceIDPermission: false }];
       return plugin;
-    }), ...(process.env.DOT_PLATFORM === 'macos' ? ['./plugins/with-mac-catalyst'] : [])],
+    }), ['./plugins/with-store-signing', { profileName: 'dot read IOS_APP_STORE' }], ...(process.env.DOT_PLATFORM === 'macos' ? ['./plugins/with-mac-catalyst'] : [])],
     updates: { ...config.updates, enabled: false },
     ios: {
       ...config.ios,
       appleTeamId: 'YJH8WWUVF3',
+      buildNumber: process.env.DOT_BUILD_NUMBER || config.ios?.buildNumber || '1',
       privacyManifests: {
         ...config.ios?.privacyManifests,
         NSPrivacyTracking: false,

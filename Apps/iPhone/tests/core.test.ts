@@ -270,15 +270,15 @@ test("pairing credentials stay in the fragment and reject unsafe endpoints and m
     key: encode64(new Uint8Array(32)),
   };
   const url =
-    "exp://u.expo.dev/project?channel-name=iphone-preview#read-setup=" +
+    "read-mobile://connections?source=mac#read-setup=" +
     encode64(new TextEncoder().encode(JSON.stringify(profile)));
   assert.equal(setupLink(url)?.endpoint, profile.endpoint);
   assert.ok(!new URL(url).search.includes("token"));
-  assert.equal(setupLink("exp://u.expo.dev/project"), undefined);
+  assert.equal(setupLink("read-mobile://connections"), undefined);
   const invalid = { ...profile, endpoint: "http://untrusted.example/pair" };
   assert.throws(() =>
     setupLink(
-      "exp://u.expo.dev/project#read-setup=" +
+      "read-mobile://connections#read-setup=" +
         encode64(new TextEncoder().encode(JSON.stringify(invalid))),
     ),
   );

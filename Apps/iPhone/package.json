@@ -1,6 +1,6 @@
 {
   "name": "read-iphone",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -56,7 +56,9 @@
     "assets": "node scripts/sync-web-assets.mjs",
     "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "lint": "expo lint",
-    "connect:mac": "node scripts/mac-pair-server.mjs"
+    "connect:mac": "node scripts/mac-pair-server.mjs",
+    "store:build": "bash scripts/build-store.sh",
+    "testflight": "bash scripts/build-store.sh ios --upload"
   },
   "private": true
 }

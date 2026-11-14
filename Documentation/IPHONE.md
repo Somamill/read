@@ -8,7 +8,7 @@ A standalone installation works without keeping a development Mac running. Optio
 
 ## Development
 
-Run `npm ci` and `npx expo run:ios` from `Apps/iPhone` for a local native build. Xcode is a developer build dependency, not an end-user dependency. Use the Store build profiles in `eas.json` for signed distributions. Store editions disable downloaded JavaScript updates and are updated through Apple distribution.
+Run `npm ci` and `npx expo run:ios` from `Apps/iPhone` for a local native build. Xcode is a developer build dependency, not an end-user dependency. Use `bash scripts/build-store.sh ios` for signed Xcode archives and the native Store workflow for TestFlight. Store editions disable downloaded JavaScript updates and are updated through Apple distribution.
 
 ## Connect your existing Mac setup automatically
 
@@ -23,7 +23,7 @@ npm run connect:mac
 
 The helper requires Node, Python 3 and `cloudflared` (install the latter with `brew install cloudflared`). It reads the current owner’s desktop configuration and validates Calibre/sync access. It stores a **private setup link** in Downloads. Open that link on the iPhone; paste the complete link under **Connections → Connect from your Mac** and choose **Connect everything**. Existing connections require confirmation before replacement; local books/highlights remain intact.
 
-Credentials and catalog metadata are encrypted with AES-256-GCM before passing through the temporary HTTPS relay. The decryption key stays in the setup link’s URL fragment, which is not sent to Expo’s update server. A high-entropy grant binds retrieval to the first device, retries are allowed for that device until acknowledgement, and the relay shuts down after confirmation or 30 minutes. Never put this private link in GitHub, a public issue or a screenshot. OAuth refresh credentials stay on their server; available stable API tokens can be transferred.
+Credentials and catalog metadata are encrypted with AES-256-GCM before passing through the temporary HTTPS relay. The decryption key stays in the setup link’s URL fragment, which is not sent to the relay server. The link opens the installed app directly using its registered `read-mobile` URL scheme. A high-entropy grant binds retrieval to the first device, retries are allowed for that device until acknowledgement, and the relay shuts down after confirmation or 30 minutes. Never put this private link in GitHub, a public issue or a screenshot. OAuth refresh credentials stay on their server; available stable API tokens can be transferred.
 
 The full Calibre catalog refreshes automatically while the app is open. Later refreshes fetch new records and recently modified metadata; covers load and cache as needed. Book files download only when you open them. A cached catalog remains visible with the Mac off, but new downloads and Mac-hosted sync require that server to be online and reachable. Same-file identifiers, ISBN evidence and unambiguous title/author matches combine connections on one book record; uncertain editions stay separate instead of overwriting progress.
 

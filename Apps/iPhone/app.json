@@ -2,14 +2,16 @@
   "expo": {
     "name": "read.",
     "slug": "read-mobile",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "scheme": "read-mobile",
     "orientation": "default",
     "icon": "./assets/read-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "io.github.somamill.read.mobile"
+      "bundleIdentifier": "io.github.somamill.read.mobile",
+      "appleTeamId": "YJH8WWUVF3",
+      "buildNumber": "8"
     },
     "plugins": [
       "expo-router",
@@ -32,17 +34,10 @@
         "asyncRoutes": {
           "web": true
         }
-      },
-      "eas": {
-        "projectId": "144f24a8-e646-4acd-a3e3-4226538e4c89"
       }
     },
-    "owner": "somamill",
     "updates": {
-      "url": "https://u.expo.dev/144f24a8-e646-4acd-a3e3-4226538e4c89"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
+      "enabled": false
     }
   }
 }

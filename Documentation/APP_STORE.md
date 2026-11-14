@@ -4,7 +4,7 @@ The Store build uses `Apps/iPhone` for iOS/iPadOS and Mac Catalyst, with univers
 
 ## Build and signing
 
-From `Apps/iPhone`, install with `npm ci`, then run `npm run typecheck`, `npm run lint`, `npm test`, and `npx expo-doctor`. The `production` EAS profile sets `DOT_EDITION=store`, disables OTA updates, removes unused microphone/Face ID permission text, and includes local-network and privacy declarations. Use `npx eas-cli@latest build --platform ios --profile production`.
+From `Apps/iPhone`, install with `npm ci`, then run `npm run typecheck`, `npm run lint`, `npm test`, and `npx expo-doctor`. The native build script sets `DOT_EDITION=store`, disables hosted JavaScript updates, removes unused microphone/Face ID permission text, and includes local-network and privacy declarations. Use `DOT_BUILD_NUMBER=8 bash scripts/build-store.sh ios`; add `--upload` with the approved `ASC_KEY_ID` and `ASC_ISSUER_ID` to validate and upload through Apple tools. Expo/EAS account connections are not used.
 
 Signing uses a locally generated, gitignored `credentials.json` referring to a distribution P12 and App Store profile kept outside the checkout. Never commit keys, passwords, profiles, Apple login sessions or Expo tokens. An authorized maintainer can alternatively configure EAS-managed credentials and change `credentialsSource` deliberately.
 
